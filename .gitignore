@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.env*
+!.env.example
+.local-data/
+coverage/
+*.tsbuildinfo
+test-results/
+
+.pages-build/
+out/
+*.tsbuildinfo
+
+# Capturas locais podem conter notas pessoais.
+docs/preview/
