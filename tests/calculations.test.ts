@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { adjustedFirst, annual, analyze, ceilGrade, groupMean, parseGrade, remainingRequired, requiredSecond, semesterBounds } from '../src/lib/calculations';
+import { adjustedFirst, annual, analyze, ceilGrade, groupMean, parseGrade, remainingRequired, remainingLabel, requiredSecond, semesterBounds } from '../src/lib/calculations';
 import { ANNUAL_WEIGHTS, DISCIPLINES, emptySemester, newSubject, workspaceSchema, emptyWorkspace, upgradeWorkspace, setBlockGrade, setBlockMode, type Assessment, type Semester } from '../src/lib/model';
 import Exact from '../src/lib/exact';
 const item = (group: 'N1'|'N2', grade: number|null, weight = 1): Assessment => ({ id: crypto.randomUUID(), name: 'Avaliação de teste', group, grade, weight, type: 'Individual' });
@@ -146,4 +146,25 @@ test('entrada rápida em uma planilha antiga vazia adota notas únicas sem exigi
   const s=setBlockGrade(legacy,'N1',7);
   assert.equal(s.blocks?.N2.mode,'direct'); assert.equal(remainingRequired(subject(6,s)).exact,true);
   assert.equal(remainingRequired(subject(6,s)).grade,7.4);
+});
+
+test('S1 direto preenchido não é solicitado quando falta confirmar avaliações de S2', () => {
+  const second=setBlockGrade(detailed([item('N1',7.5),item('N1',8)],undefined,false),'N2',10);
+  const s=subject(5.5,second),before=structuredClone(s),result=remainingRequired(s);
+  assert.equal(groupMean(second,'N1'),7.75);assert.equal(groupMean(second,'N2'),10);
+  assert.equal(analyze(s).first.final?.toNumber(),5.5);
+  assert.equal(result.scope,'planning');assert.equal(result.grade,null);assert.equal(result.exact,false);
+  assert.equal(remainingLabel(result.scope),'Confirme avaliações de S2');assert.match(result.message,/S1 de 5,5 já foi considerado/);
+  assert.equal(analyze(s).status,'possible');assert.equal(analyze(s).final,null);assert.deepEqual(s,before);
+  const confirmed=analyze({...s,s2:{...second,completePlan:true}});
+  assert.equal(confirmed.second.final?.toNumber(),8.875);assert.equal(confirmed.final?.toNumber(),8.25);assert.equal(confirmed.status,'guaranteed');
+});
+test('Informe S1 fica reservado à ausência de uma média completa de S1', () => {
+  const s=subject(null,setBlockGrade(setBlockGrade(emptySemester(),'N1',7.75),'N2',10));
+  assert.equal(remainingRequired(s).scope,'unknown');assert.equal(remainingLabel(remainingRequired(s).scope),'Informe S1');
+  s.s1.direct=0;assert.notEqual(remainingRequired(s).scope,'unknown');
+});
+test('notas únicas completas dispensam confirmação de planejamento em S2', () => {
+  const s=subject(5.5,setBlockGrade(setBlockGrade(emptySemester(),'N1',7.75),'N2',10));
+  assert.equal(remainingRequired(s).scope,'done');assert.equal(analyze(s).final?.toNumber(),8.25);assert.equal(analyze(s).status,'guaranteed');
 });

@@ -62,3 +62,7 @@ As notas reais do proprietário continuam no computador e não foram migradas au
 ### Publicação desta atualização
 
 Commit 22a12b2 publicado pelo workflow 39421109152: build e deploy concluídos com sucesso. No endereço público, conferidos a introdução, os campos finais editáveis e os novos controles PDF. Console sem erros ou avisos. Worker PDF e fontes retornaram HTTP 200 no caminho /nota-clara/. A sessão existente foi mantida, sem gravações de teste na planilha do usuário; os testes de edição/importação foram feitos na conta local de QA. Nenhum dado do anexo foi enviado ao repositório.
+
+## Correção da mensagem de planejamento
+
+63 testes passaram, incluindo S1 direto 5,5 e S2 com N1 detalhada 7,75 e N2 única 10. Sem planejamento confirmado, a mensagem agora pede confirmação das avaliações de S2, mantendo limites conservadores. Com confirmação, S2=8,875 e média anual=8,25. Sem S1, a solicitação de S1 permanece; zero é considerado nota. Nenhuma migração ou alteração nas notas dos usuários.

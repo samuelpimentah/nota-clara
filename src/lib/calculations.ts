@@ -68,7 +68,7 @@ export function analyze(subject: Subject) {
     adjusted: first.final !== null && second.final !== null ? adjustedFirst(first.final, second.final) : null,
   };
 }
-export type Remaining = { grade: number | null; exact: boolean; message: string; scope: 'semester' | 'N1' | 'N2' | 'remaining' | 'done' | 'unknown' };
+export type Remaining = { grade: number | null; exact: boolean; message: string; scope: 'semester' | 'N1' | 'N2' | 'remaining' | 'done' | 'planning' | 'unknown' };
 export function remainingRequired(subject: Subject, goal = 7): Remaining {
   const a = analyze(subject), s = subject.s2;
   if (a.target === null) return { grade: null, exact: false, scope: 'unknown', message: 'Conclua ou informe a média de S1 para calcular a meta.' };
@@ -99,7 +99,7 @@ export function remainingRequired(subject: Subject, goal = 7): Remaining {
     }
     if (groupPending) pendingGroups.push(group);
   }
-  if (pending.isZero()) return { grade: null, exact, scope: exact ? 'done' : 'unknown', message: exact ? 'Todas as notas com peso foram preenchidas.' : 'Sem pendências cadastradas. Confirme o planejamento das avaliações para concluir o semestre.' };
+  if (pending.isZero()) return { grade: null, exact, scope: exact ? 'done' : 'planning', message: exact ? 'Todas as notas com peso foram preenchidas.' : `S1 de ${fmt(a.first.final)} já foi considerado. Todas as avaliações cadastradas em S2 têm nota, mas o cadastro completo ainda não foi confirmado. No + de S2, confirme que cadastrou todas as avaliações ou inclua as que faltam com nota vazia.` };
   const grade = Exact.max(0, target.minus(fixed).div(pending));
   const scope = !anyFilled ? 'semester' : pendingGroups.length === 1 ? pendingGroups[0] : 'remaining';
   return { grade: ceilGrade(grade), exact, scope, message: exact
@@ -107,7 +107,7 @@ export function remainingRequired(subject: Subject, goal = 7): Remaining {
     : 'Estimativa com as avaliações cadastradas. Complete o planejamento para confirmar a meta restante.' };
 }
 export function remainingLabel(scope: Remaining['scope']): string {
-  return scope === 'N1' || scope === 'N2' ? `${scope} de S2` : scope === 'semester' ? 'média de S2' : scope === 'remaining' ? 'nas restantes de S2' : scope === 'done' ? 'Sem pendências' : 'Informe S1';
+  return scope === 'N1' || scope === 'N2' ? `${scope} de S2` : scope === 'semester' ? 'média de S2' : scope === 'remaining' ? 'nas restantes de S2' : scope === 'done' ? 'Sem pendências' : scope === 'planning' ? 'Confirme avaliações de S2' : 'Informe S1';
 }
 export function parseGrade(text: string): number | null {
   if (!text.trim()) return null;
