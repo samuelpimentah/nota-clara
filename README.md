@@ -192,3 +192,7 @@ A célula **Final** de cada semestre aceita edição direta. Apagá-la restaura 
 Em **Gerenciar**, a meta pessoal pode ir de 7 a 10, inclusive com vírgula decimal. Isso altera a projeção restante; as situações escolares continuam usando o critério oficial 7. A introdução aparece uma vez por conta e pode ser reaberta pela ajuda.
 
 As novas preferências são opcionais no formato versão 1. Planilhas antigas usam meta 7 até uma alteração explícita; nenhuma nota é inicializada ou substituída ao atualizar. A migração 002 preserva essas preferências quando um cliente antigo as omite em uma gravação posterior.
+
+### Média geral no painel
+
+O card Média geral usa uma contribuição por matéria visível, com pesos iguais entre disciplinas. Usa a média anual concluída (incluindo ajuste de S1); caso ela esteja pendente, usa S1 concluído ou, na ausência dele, S2 concluído. Matérias sem média semestral completa são excluídas, sem contar como zero. O card indica resultado parcial e quantas matérias entraram. A busca e os filtros da tabela não alteram o resumo; ocultar uma matéria a exclui. Esse indicador não determina aprovação individual.

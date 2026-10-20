@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { adjustedFirst, annual, analyze, ceilGrade, groupMean, parseGrade, remainingRequired, remainingLabel, requiredSecond, semesterBounds } from '../src/lib/calculations';
+import { adjustedFirst, annual, analyze, ceilGrade, groupMean, parseGrade, remainingRequired, remainingLabel, requiredSecond, overallAverage, semesterBounds } from '../src/lib/calculations';
 import { ANNUAL_WEIGHTS, DISCIPLINES, emptySemester, newSubject, workspaceSchema, emptyWorkspace, upgradeWorkspace, setBlockGrade, setBlockMode, type Assessment, type Semester } from '../src/lib/model';
 import Exact from '../src/lib/exact';
 const item = (group: 'N1'|'N2', grade: number|null, weight = 1): Assessment => ({ id: crypto.randomUUID(), name: 'Avaliação de teste', group, grade, weight, type: 'Individual' });
@@ -167,4 +167,18 @@ test('Informe S1 fica reservado à ausência de uma média completa de S1', () =
 test('notas únicas completas dispensam confirmação de planejamento em S2', () => {
   const s=subject(5.5,setBlockGrade(setBlockGrade(emptySemester(),'N1',7.75),'N2',10));
   assert.equal(remainingRequired(s).scope,'done');assert.equal(analyze(s).final?.toNumber(),8.25);assert.equal(analyze(s).status,'guaranteed');
+});
+
+test('média geral usa semestres concluídos e ignora vazios, parciais e matérias ocultas',()=>{
+  const a=subject(8,emptySemester()),b=subject(0,emptySemester()),c=subject(null,emptySemester()),hidden=subject(10,emptySemester());hidden.hidden=true;
+  c.s1=setBlockGrade(c.s1,'N1',10);const subjects=[a,b,c,hidden],before=structuredClone(subjects),result=overallAverage(subjects);
+  assert.equal(result.average?.toNumber(),4);assert.equal(result.count,2);assert.equal(result.total,3);assert.equal(result.partial,true);assert.deepEqual(subjects,before);
+});
+test('média geral dá peso igual às matérias e usa a anual com recuperação quando fechada',()=>{
+  const a=subject(6,{...emptySemester('direct'),direct:7.2}),b=subject(8,{...emptySemester('direct'),direct:9});
+  const result=overallAverage([a,b]);assert.equal(result.average?.toNumber(),47/6);assert.equal(result.partial,false);assert.equal(result.count,2);
+  const onlySecond=subject(null,{...emptySemester('direct'),direct:9});assert.equal(overallAverage([onlySecond]).average?.toNumber(),9);assert.equal(overallAverage([onlySecond]).partial,true);
+});
+test('média geral sem notas não inventa zero',()=>{
+  assert.equal(overallAverage([]).average,null);const result=overallAverage([newSubject('Sem notas')]);assert.equal(result.average,null);assert.equal(result.count,0);assert.equal(result.total,1);
 });

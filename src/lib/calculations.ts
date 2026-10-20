@@ -119,3 +119,11 @@ export function parseGrade(text: string): number | null {
 export function fmt(value: ExactValue | null | undefined, digits = 2): string {
   return value == null ? '—' : new Intl.NumberFormat('pt-BR', { maximumFractionDigits: digits, minimumFractionDigits: Math.min(1, digits) }).format(d(value).toNumber());
 }
+
+// Uma contribuição por matéria visível; notas parciais de blocos não fecham um semestre.
+export function overallAverage(subjects: Subject[]) {
+  const visible=subjects.filter(subject=>!subject.hidden), analyses=visible.map(analyze);
+  const values=analyses.flatMap(a=>{const value=a.final ?? a.first.final ?? a.second.final;return value===null?[]:[value];});
+  return { average:values.length ? values.reduce((sum,value)=>sum.plus(value),d(0)).div(values.length) : null,
+    count:values.length,total:visible.length,partial:analyses.some(a=>a.final===null) };
+}

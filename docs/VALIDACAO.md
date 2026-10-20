@@ -66,3 +66,7 @@ Commit 22a12b2 publicado pelo workflow 39421109152: build e deploy concluídos c
 ## Correção da mensagem de planejamento
 
 63 testes passaram, incluindo S1 direto 5,5 e S2 com N1 detalhada 7,75 e N2 única 10. Sem planejamento confirmado, a mensagem agora pede confirmação das avaliações de S2, mantendo limites conservadores. Com confirmação, S2=8,875 e média anual=8,25. Sem S1, a solicitação de S1 permanece; zero é considerado nota. Nenhuma migração ou alteração nas notas dos usuários.
+
+## Card Média geral
+
+66 testes passaram e TypeScript sem erros. Testes cobrem notas ausentes versus zero, exclusão de matérias ocultas, semestres parciais, médias anuais com recuperação, pesos iguais entre disciplinas, resultado vazio e preservação da entrada. Interface local conferida com cinco cards, valor decimal, identificação parcial e contagem. Nenhuma alteração no formato dos dados ou no banco.
