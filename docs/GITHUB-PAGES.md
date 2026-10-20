@@ -1,6 +1,6 @@
 # GitHub Pages + Supabase
 
-A publicação foi autorizada. Ainda depende de acesso às contas e validação real.
+Publicado com autorização em https://samuelpimentah.github.io/nota-clara/. Repositório: https://github.com/samuelpimentah/nota-clara. O workflow 39348989321 concluiu build e deploy com sucesso. Os passos abaixo documentam a configuração para manutenção ou reprodução.
 
 1. Criar um projeto Supabase gratuito e executar `supabase/migrations/001_workspaces.sql` em um banco novo. Não reutilizar uma tabela de outro aplicativo.
 2. Habilitar autenticação por senha e desabilitar confirmação de e-mail para os identificadores técnicos de username. Nenhum e-mail é solicitado ao aluno.

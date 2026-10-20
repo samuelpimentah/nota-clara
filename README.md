@@ -2,14 +2,15 @@
 
 Planilha escolar com metas de aprovação direta, interface em português, modo claro/escuro, contas por **nome de usuário e senha** e salvamento automático.
 
-**Entrega local. Nenhum repositório remoto, push ou deploy foi realizado.** A publicação exige autorização explícita do proprietário.
+**Publicado com autorização do proprietário:** [acessar Nota Clara](https://samuelpimentah.github.io/nota-clara/) · [repositório](https://github.com/samuelpimentah/nota-clara). O site usa GitHub Pages para a interface e Supabase para contas e notas. Cadastros online são separados das contas locais; notas locais não são transferidas automaticamente.
 
 ## Executar no Windows
 
 Requer Node.js 20.9 ou superior. Desenvolvido e validado com Node.js 24.
 
 ```powershell
-cd 'C:\Users\samuelhironimus-ieg\Documents\Codex\2026-10-18\prompt-desenvolver-um-sistema-de-controle\outputs\nota-clara'
+git clone https://github.com/samuelpimentah/nota-clara.git
+cd nota-clara
 npm ci
 npm run dev
 ```
@@ -121,7 +122,7 @@ As contas locais não são transferidas automaticamente para Supabase. Ao ativá
 
 O caminho de produção usa Next.js App Router e rotas de servidor. É compatível com uma futura publicação na Vercel; o armazenamento local é bloqueado quando `VERCEL` está definido. O cliente recebe somente URL/chave pública, e o servidor valida a identidade com `auth.getUser()` em cada operação. O banco aplica RLS independentemente do servidor. O proxy renova sessões Supabase conforme o fluxo oficial de SSR.
 
-**GitHub Pages:** a publicação foi autorizada e a adaptação estática está preparada. O comando `npm run build:pages` cria uma cópia de build em `.pages-build`, remove apenas nessa cópia as rotas de servidor e o proxy e gera `.pages-build/out`. No Pages, a autenticação e persistência usam o Supabase diretamente pelo navegador, com RLS. O desenvolvimento local padrão mantém seu servidor e suas contas locais. A publicação real depende da configuração e validação do Supabase e do repositório.
+**GitHub Pages:** a publicação foi autorizada e a adaptação estática está preparada. O comando `npm run build:pages` cria uma cópia de build em `.pages-build`, remove apenas nessa cópia as rotas de servidor e o proxy e gera `.pages-build/out`. No Pages, a autenticação e persistência usam o Supabase diretamente pelo navegador, com RLS. O desenvolvimento local padrão mantém seu servidor e suas contas locais. A publicação foi concluída e validada com Supabase real e o workflow de Pages.
 
 ## Estrutura
 
