@@ -567,3 +567,6 @@ td:last-child { padding:8px 8px 8px 0; }
  .table-heading { flex-direction:column; }.table-heading .table-actions { justify-content:flex-start; width:100%; }.table-actions .import-button { font-size:12px; padding:9px 12px; }
  .onboarding li { gap:12px; }.onboarding li strong { font-size:14px; }.onboarding li p { font-size:13px; }
 }
+
+.onboarding,.report-import { padding:24px; }
+@media(max-width:480px) { .onboarding,.report-import { padding:20px; } }
