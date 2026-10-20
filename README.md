@@ -104,9 +104,9 @@ O nome inicialmente transcrito como “Tecnologia” passou a **Estágio**, conf
 
 Não foram acrescentadas História, Geografia ou Física, que eram somente exemplos do pedido.
 
-## Supabase e futura publicação — configuração pendente
+## Supabase e publicação no GitHub Pages
 
-A integração foi implementada, mas **não houve conexão com um projeto Supabase real**. Sem credenciais, login externo, PostgreSQL, renovação de sessão externa e RLS em um serviço real ainda não foram validados.
+A integração foi configurada em um projeto Supabase real da conta samuelpimentah. Doze verificações online passaram: cadastro por senha, leitura e gravação, novo login, bloqueio de acesso entre contas, acesso anônimo negado e controle de revisões. A configuração abaixo documenta como preparar outro projeto.
 
 1. Crie ou selecione um projeto Supabase sob sua conta.
 2. Execute `supabase/migrations/001_workspaces.sql` no SQL Editor. O script cria a tabela, restrições, trigger de revisão e RLS por `auth.uid()`.
@@ -115,7 +115,7 @@ A integração foi implementada, mas **não houve conexão com um projeto Supaba
 5. Reinicie o servidor. O aviso de ambiente local deixará de aparecer quando a integração estiver configurada.
 6. Crie duas contas de teste distintas e valide leitura e escrita isoladas, inclusive diretamente na API REST do Supabase com o token da outra conta. Verifique login, logout, nova sessão e conflito de revisões antes de considerar a integração aprovada.
 
-O Supabase Auth exige um identificador de e-mail ou telefone internamente. Para preservar o cadastro apenas com usuário/senha, o servidor converte o username normalizado em um identificador determinístico `SHA-256(username)@accounts.notaclara.invalid`. Esse endereço reservado é **um identificador técnico sem caixa postal**, não um e-mail solicitado ao aluno. A senha é validada pelo Supabase Auth. Não são usados e-mails reais, confirmação ou recuperação por e-mail. Essa estratégia precisa ser validada no projeto real antes da publicação.
+O Supabase Auth exige um identificador de e-mail ou telefone internamente. Para preservar o cadastro apenas com usuário/senha, o servidor converte o username normalizado em um identificador determinístico `SHA-256(username)@accounts.notaclara.invalid`. Esse endereço reservado é **um identificador técnico sem caixa postal**, não um e-mail solicitado ao aluno. A senha é validada pelo Supabase Auth. Não são usados e-mails reais, confirmação ou recuperação por e-mail. Essa estratégia foi validada no projeto real, com confirmação por e-mail desabilitada por autorização explícita do proprietário.
 
 As contas locais não são transferidas automaticamente para Supabase. Ao ativá-lo, o cadastro passa a pertencer ao provedor externo. Use Exportar minhas notas para guardar uma cópia CSV ou Excel antes dessa mudança. A versão atual exporta cópias; não possui importação automática.
 

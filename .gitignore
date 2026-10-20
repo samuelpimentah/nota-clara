@@ -13,3 +13,6 @@ out/
 
 # Capturas locais podem conter notas pessoais.
 docs/preview/
+
+# Anexos fornecidos pelo usuário permanecem locais.
+docs/anexos/

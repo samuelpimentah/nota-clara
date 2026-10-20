@@ -1,0 +1,37 @@
+import assert from 'node:assert/strict';
+import { createClient } from '@supabase/supabase-js';
+import { randomBytes } from 'node:crypto';
+import { usernameIdentity } from '../src/lib/browser-api';
+import { emptyWorkspace, setBlockGrade } from '../src/lib/model';
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!, key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+assert.ok(url && key,'Defina somente URL e chave pública do projeto.');
+const make = () => createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
+const a = make(), b = make(), anon = make();
+const suffix = Date.now().toString(36), usernameA = `qa_online_${suffix}_a`, usernameB = `qa_online_${suffix}_b`, password = randomBytes(24).toString('hex');
+let count = 0;
+const ok = (text: string) => { count++; console.log(`OK ${count}: ${text}`); };
+const settings = await fetch(`${url}/auth/v1/settings`,{headers:{apikey:key}}).then(r=>r.json());
+assert.equal(settings.mailer_autoconfirm,true,'Confirmação de e-mail ainda está habilitada.'); ok('cadastro sem confirmação de e-mail configurado');
+async function signup(client: ReturnType<typeof make>, username: string) {
+  const {data,error} = await client.auth.signUp({email:await usernameIdentity(username),password,options:{data:{username,name:'Conta descartável de QA'}}});
+  assert.equal(error,null,error?.message); assert.ok(data.session); return data.user!.id;
+}
+const idA = await signup(a,usernameA), idB = await signup(b,usernameB); ok('duas contas de QA criadas com sessão e senha');
+const workspace = emptyWorkspace();
+workspace.subjects[0].s1 = setBlockGrade(setBlockGrade(workspace.subjects[0].s1,'N1',6),'N2',6);
+workspace.subjects[0].s2 = setBlockGrade(workspace.subjects[0].s2,'N1',7);
+const insertA = await a.from('workspaces').insert({user_id:idA,data:workspace}).select('revision').single();
+assert.equal(insertA.error,null,insertA.error?.message); assert.equal(insertA.data!.revision,0); ok('planilha autenticada inserida');
+const insertB = await b.from('workspaces').insert({user_id:idB,data:emptyWorkspace()}); assert.equal(insertB.error,null,insertB.error?.message);
+const anonymous = await anon.from('workspaces').select('*'); assert.ok(anonymous.error || anonymous.data?.length === 0); ok('anônimo não acessa notas');
+const crossRead = await b.from('workspaces').select('*').eq('user_id',idA); assert.equal(crossRead.error,null); assert.deepEqual(crossRead.data,[]); ok('conta B não lê notas da conta A');
+const crossWrite = await b.from('workspaces').update({revision:1,data:emptyWorkspace()}).eq('user_id',idA).select('*'); assert.equal(crossWrite.error,null); assert.deepEqual(crossWrite.data,[]); ok('conta B não altera notas da conta A');
+const crossInsert = await b.from('workspaces').insert({user_id:crypto.randomUUID(),data:emptyWorkspace()}); assert.ok(crossInsert.error); ok('não é possível criar planilha em nome de outra conta');
+const own = await a.from('workspaces').update({data:workspace,revision:1}).eq('user_id',idA).eq('revision',0).select('data,revision').single(); assert.equal(own.error,null,own.error?.message); assert.equal(own.data!.revision,1); ok('salvamento com revisão incrementada');
+const conflict = await a.from('workspaces').update({data:workspace,revision:1}).eq('user_id',idA).eq('revision',0).select('*'); assert.equal(conflict.error,null); assert.deepEqual(conflict.data,[]); ok('revisão antiga não sobrescreve dados');
+const invalid = await a.from('workspaces').update({data:workspace,revision:3}).eq('user_id',idA); assert.ok(invalid.error); ok('trigger rejeita incremento inválido de revisão');
+await a.auth.signOut(); const signedOut = await a.from('workspaces').select('*'); assert.ok(signedOut.error || signedOut.data?.length === 0); ok('logout remove acesso autenticado');
+const login = await a.auth.signInWithPassword({email:await usernameIdentity(usernameA),password}); assert.equal(login.error,null,login.error?.message);
+const read = await a.from('workspaces').select('data,revision').eq('user_id',idA).single(); assert.equal(read.error,null); assert.equal(read.data!.data.subjects[0].s2.blocks.N1.grade,7); ok('novo login recupera as notas salvas');
+await a.auth.signOut(); await b.auth.signOut();
+console.log(`${count} verificações reais concluídas. Contas de QA: ${usernameA}, ${usernameB}.`);

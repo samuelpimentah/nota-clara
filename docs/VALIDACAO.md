@@ -93,3 +93,11 @@ Reproduza com os comandos e o roteiro do `README.md`.
 - 52 testes passaram, incluindo igualdade do identificador de username no servidor e navegador. A compilação estática foi gerada com sucesso em `.pages-build/out`, sem rotas API nem proxy.
 - O adaptador do navegador usa Supabase Auth e PostgreSQL com RLS; as operações reais e o isolamento online ainda dependem de configuração e teste no projeto Supabase.
 - O build local padrão continua disponível. O workflow de Pages está preparado e bloqueia publicação sem as variáveis públicas de Supabase. Capturas de notas pessoais estão excluídas do Git.
+
+## Supabase real configurado
+
+- Organização pessoal Nota Clara, projeto nota-clara no plano Free da conta samuelpimentah.
+- Migração 001 executada com sucesso. RLS, políticas por proprietário e trigger de revisão instalados. Confirmação de e-mail desabilitada com autorização explícita no momento da alteração.
+- `scripts/verify-supabase.ts`: 12 verificações reais passaram: duas contas com sessão, gravação autenticada, acesso anônimo negado, leitura e alteração cruzadas bloqueadas, tentativa de inserir em nome de outro usuário negada, revisão incrementada, conflito rejeitado, trigger de revisão inválida, logout e recuperação após novo login.
+- Duas contas próprias identificadas pelo prefixo qa_online foram criadas somente para QA; suas notas de exemplo não são notas reais do proprietário. Não foi usada chave privilegiada ou senha do banco.
+- Repositório samuelpimentah/nota-clara criado e código enviado. GitHub Pages configurado para Actions, com somente URL e chave pública de Supabase nas variáveis do repositório. Capturas e anexos pessoais excluídos do Git.
