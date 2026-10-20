@@ -3,7 +3,7 @@ import { ArrowRight, LockKeyhole } from 'lucide-react';
 import { fmt, groupMean, semesterBounds } from '@/lib/calculations';
 import { ANNUAL_WEIGHTS, type Semester } from '@/lib/model';
 import { GradeInput } from './ui';
-import { BlockGrade } from './block-grade';
+import { BlockGrade, SemesterGrade } from './block-grade';
 
 export type SemesterKey = 's1' | 's2';
 export function SemesterOverview({ semester, semesterKey, subjectName, onDirectChange, onOpen, onBlockChange }: {
@@ -18,7 +18,7 @@ export function SemesterOverview({ semester, semesterKey, subjectName, onDirectC
       <span>{group}</span><BlockGrade semester={semester} semesterKey={semesterKey} group={group} subjectName={subjectName} onChange={grade => onBlockChange(group,grade)} onDetails={() => onOpen(group)} />
       <small>{semester.mode === 'direct' ? 'Média direta' : `${fmt(semester.weights[group] / (semester.weights.N1 + semester.weights.N2) * 100, 0)}% do semestre`}</small>
     </div>)}<div className="mobile-semester-average"><span>FINAL</span>
-      {semester.mode === 'direct' ? <GradeInput compact label={`${semesterKey.toUpperCase()} de ${subjectName}`} value={semester.direct} onChange={onDirectChange} /> : <button className="cell-button" onClick={() => onOpen()}>{bounds.final !== null ? fmt(bounds.final) : '—'}</button>}
+      <SemesterGrade semester={semester} semesterKey={semesterKey} subjectName={subjectName} onChange={onDirectChange} />
     </div></div>
     <button className="text-button semester-edit" onClick={() => onOpen()}>Opções do {label} <ArrowRight size={12} /></button>
   </section>;

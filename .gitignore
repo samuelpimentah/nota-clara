@@ -16,3 +16,6 @@ docs/preview/
 
 # Anexos fornecidos pelo usuário permanecem locais.
 docs/anexos/
+
+public/pdf.worker.min.mjs
+public/pdf-standard-fonts/

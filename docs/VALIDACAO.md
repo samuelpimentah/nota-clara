@@ -8,7 +8,7 @@ GitHub Actions: https://github.com/samuelpimentah/nota-clara/actions/runs/393489
 
 ## Cálculos e exportação
 
-52 testes automatizados passaram e também foram executados pelo workflow de publicação. Cobrem média anual com pesos fixos 1 e 2, recuperação de S1 com teto 7, precisão racional, limites das pendências, notas ausentes versus zero, notas únicas e detalhadas, pesos internos de avaliações, pesos N1/N2 independentes e metas dinâmicas. Há testes de CSV e leitura do XLSX gerado, com acentos, números, vazios, zero, aspas, quebras de linha e nomes que poderiam ser interpretados como fórmulas. O identificador técnico de username corresponde no servidor e navegador.
+60 testes automatizados passaram na revisão de PDF. Cobrem média anual, recuperação com teto, precisão racional, pendências, pesos, metas dinâmicas e pessoais, compatibilidade com planilhas antigas e importação seletiva. O teste de PDF lê o arquivo gerado para conferir título, notas, vazios e ausência de frequência. CSV/Excel foram substituídos por PDF.
 
 Exemplo validado: S1=6, N1 de S2=7 → necessidade de 7,4 em N2. Com N2=7,4, S2=7,2; S1 ajustado=6,6; média anual=7, situação Garantida. Notas parciais não fecham a média anual. Pesos das avaliações só afetam seu próprio bloco. Os pesos anuais não são editáveis.
 
@@ -40,7 +40,7 @@ As duas contas `qa_online_*` e uma conta `qa_ui_*` foram criadas exclusivamente 
 - Entrada com vírgula, meta dinâmica 7,4, média anual 7 e ajuste de S1 conferidos visualmente. Após recarregar, sessão e notas foram recuperadas.
 - Coluna Final do ano ao lado da situação. Sem semestres concluídos, resultado Pendente.
 - Viewport 390×844: largura do documento 375 px, sem transbordamento horizontal. Cartões móveis exibem situação e média anual juntos.
-- Opções CSV e Excel presentes no site publicado. O clique no Excel iniciou a geração sem erro no console; o recebimento pelo gerenciador de downloads da ferramenta não foi confirmado. Não houve abertura no Microsoft Excel.
+- Na revisão anterior havia CSV/Excel. Na atualização atual foram substituídos por PDF; geração pela interface local sem erros no console. O arquivo produzido pelo mesmo gerador foi aberto, extraído e renderizado para conferência.
 - Console da revisão publicada sem erros ou avisos.
 - Capturas locais em docs/preview mostram contas descartáveis de QA e estão excluídas do Git, assim como anexos pessoais, ambientes e dados locais.
 
@@ -48,4 +48,13 @@ As duas contas `qa_online_*` e uma conta `qa_ui_*` foram criadas exclusivamente 
 
 O servidor local padrão e suas contas continuam separados do site online. A revisão anterior passou em 20 verificações HTTP locais, com sessão, persistência, concorrência e isolamento. A versão estática remove rotas API e proxy apenas em `.pages-build`; o código local permanece disponível.
 
-As notas reais do proprietário continuam no computador e não foram migradas automaticamente ao Supabase. O site exige criar uma conta online. Há exportação, mas não há importação automática nem histórico independente de anos. Não existe recuperação de senha, conforme solicitado. A conferência móvel usou viewport do navegador, não aparelho físico.
+As notas reais do proprietário continuam no computador e não foram migradas automaticamente ao Supabase. O site exige criar uma conta online. Há exportação PDF e importação revisada de médias semestrais; não existe histórico independente de anos. Não existe recuperação de senha, conforme solicitado. A conferência móvel usou viewport do navegador, não aparelho físico.
+
+## Atualização de boletim PDF
+
+- PDF original anexado: 18 disciplinas reconhecidas e vinculadas corretamente; todas as notas de S2 ausentes permaneceram nulas. Não se importam frequência, faltas, médias anuais ou recuperação final.
+- Interface local: introdução no primeiro acesso, persistência após recarregar, edição direta da média do semestre, retorno às notas N1/N2 guardadas, prévia com conflitos desmarcados e aplicação somente das notas selecionadas.
+- Meta pessoal 8: S1=6 e N1(S2)=7 exigem N2=10. Com N2=7,4 a aprovação escolar fica Garantida, mas a meta pessoal não foi atingida. Regra oficial não alterada.
+- PDF A4 com tabela, aviso não oficial e data; inspeção visual de uma página e de todas as seis páginas de um cenário com 100 nomes longos. Linhas não são quebradas entre páginas e o rodapé não sobrepõe a tabela.
+- Migração 002 aplicada sem atualizar linhas. Os nove registros e sua assinatura de conteúdo, revisão e data ficaram idênticos antes/depois. Teste real posterior, apenas na conta qa_ui, confirmou que um cliente antigo não apaga as preferências; todas as suas notas permaneceram idênticas.
+- Limites: PDFs precisam conter texto selecionável; não há OCR. A conferência do viewport móvel da revisão anterior permanece documentada acima; a ferramenta de viewport não aplicou o novo tamanho nesta sessão, portanto não foi registrada uma nova validação móvel.

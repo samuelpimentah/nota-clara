@@ -529,3 +529,41 @@ td:last-child { padding:8px 8px 8px 0; }
 .export-options { display:flex; flex-wrap:wrap; gap:12px; margin:22px 0; }
 .export-options .button { font-size:15px; min-height:46px; }
 .export-options .button:disabled { opacity:.6; cursor:wait; }
+
+/* PDF workflow, personal goal and first-visit guidance. */
+.semester-inline-grade { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.semester-inline-grade .grade-field.compact { width:42px; }
+.semester-inline-grade .grade-field.compact input { border:1px solid var(--line); border-radius:6px; padding:7px 1px; font-size:14px; background:var(--surface); }
+.semester-inline-grade.direct .grade-field input { border-color:var(--teal); background:var(--mint); }
+.semester-inline-grade>small { font-size:8px; color:var(--muted); }
+.personal-goal-setting { display:flex; align-items:center; flex-wrap:wrap; gap:16px; border:1px solid var(--line); border-radius:10px; padding:18px; margin-bottom:23px; background:var(--surface-soft); }
+.personal-goal-setting>svg { color:var(--teal); flex-shrink:0; }.personal-goal-setting>div { flex:1; min-width:180px; }
+.personal-goal-setting h3 { font-size:17px; margin:0 0 6px; }.personal-goal-setting p { font-size:13px; line-height:1.7; margin:0; }
+.personal-goal-setting>label { display:flex; flex-direction:column; gap:8px; width:95px; font-size:13px; }
+.personal-goal-setting input { font-size:20px; padding:10px; }
+.personal-goal-setting>.notice { flex-basis:100%; }
+.onboarding>p { font-size:14px; line-height:1.8; color:var(--muted); }.onboarding ol { list-style:none; padding:0; margin:24px 0; }
+.onboarding li { display:flex; align-items:flex-start; gap:16px; margin:22px 0; }.onboarding li>svg { color:var(--teal); flex-shrink:0; margin-top:2px; }
+.onboarding li strong { font-size:15px; }.onboarding li p { font-size:13px; line-height:1.8; color:var(--muted); margin-top:7px; }
+.onboarding>.button { width:100%; min-height:46px; font-size:15px; }
+.report-import { font-size:14px; }.report-import .notice { font-size:13px; line-height:1.7; }
+.import-intro { display:flex; align-items:flex-start; gap:10px; line-height:1.8; margin:20px 0; }.import-intro svg { flex-shrink:0; color:var(--teal); margin-top:3px; }
+.import-warning { display:flex; gap:9px; align-items:flex-start; color:#a77b32; font-size:13px; line-height:1.6; margin:14px 0; }.import-warning>svg { flex-shrink:0; margin-top:2px; }
+.import-year { display:flex; gap:12px; align-items:flex-start; padding:14px; background:var(--surface-soft); font-size:13px; line-height:1.7; }
+.import-rows { margin:20px 0; }.import-row { padding:18px; border:1px solid var(--line); border-radius:9px; margin-bottom:12px; }
+.import-row>header { display:flex; align-items:flex-start; gap:18px; justify-content:space-between; }.import-row>header>strong { flex:1; font-size:14px; line-height:1.7; }
+.import-row>header>label { width:240px; font-size:11px; display:flex; flex-direction:column; gap:7px; }
+.import-row select { font-size:13px; padding:9px; background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:6px; width:100%; }
+.import-semesters { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:17px; }
+.import-grade { display:flex; align-items:flex-start; gap:10px; padding:12px; background:var(--surface-soft); border-radius:7px; }
+.import-grade input,.import-year input { width:18px; height:18px; flex-shrink:0; accent-color:var(--teal); }
+.import-grade strong { font-size:13px; }.import-grade small { display:block; font-size:12px; line-height:1.6; margin-top:7px; color:var(--muted); }
+.import-grade.conflict { border:1px solid #ddc993; }.import-footer { display:flex; align-items:center; flex-wrap:wrap; gap:12px; margin-top:20px; padding-top:18px; border-top:1px solid var(--line); }
+.import-footer>span { margin-right:auto; font-size:13px; }.import-footer .button { font-size:13px; min-height:43px; }.import-footer .button:disabled { opacity:.5; cursor:not-allowed; }
+.import-error { margin:0 20px 18px; }.table-actions .import-button { font-size:12px; }.table-actions { flex-wrap:wrap; }
+@media(max-width:600px) {
+ .import-row>header { flex-direction:column; gap:12px; }.import-row>header>label { width:100%; }.import-semesters { grid-template-columns:1fr; gap:8px; }
+ .import-row { padding:13px; }.personal-goal-setting>div { min-width:150px; }.personal-goal-setting { padding:14px; }
+ .table-heading { flex-direction:column; }.table-heading .table-actions { justify-content:flex-start; width:100%; }.table-actions .import-button { font-size:12px; padding:9px 12px; }
+ .onboarding li { gap:12px; }.onboarding li strong { font-size:14px; }.onboarding li p { font-size:13px; }
+}

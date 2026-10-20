@@ -3,6 +3,7 @@ const staticHost = process.env.NEXT_PUBLIC_STATIC_HOST === 'true';
 const config: NextConfig = {
   ...(staticHost ? { output: 'export', trailingSlash: true, basePath: process.env.PAGES_BASE_PATH || '', images: { unoptimized: true } } : {}),
   poweredByHeader: false,
+  env: { NEXT_PUBLIC_APP_BASE_PATH: staticHost ? process.env.PAGES_BASE_PATH || '' : '' },
   ...(staticHost ? {} : { async headers() {
     return [{ source: '/:path*', headers: [
       { key: 'X-Content-Type-Options', value: 'nosniff' },

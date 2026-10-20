@@ -44,9 +44,10 @@ export function adjustedFirst(s1: ExactValue, s2: ExactValue): Exact {
 export function annual(s1: ExactValue, s2: ExactValue): Exact {
   return adjustedFirst(s1, s2).mul(ANNUAL_WEIGHTS.s1).plus(d(s2).mul(ANNUAL_WEIGHTS.s2)).div(ANNUAL_WEIGHTS.s1 + ANNUAL_WEIGHTS.s2);
 }
-export function requiredSecond(s1: ExactValue): Exact {
-  const first = d(s1);
-  return first.lt(7) ? Exact.max(7, d(42).minus(first).div(5)) : d(21).minus(first).div(2);
+export function requiredSecond(s1: ExactValue, goal = 7): Exact {
+  if (!Number.isFinite(goal) || goal < 7 || goal > 10) throw new Error('A meta pessoal deve estar entre 7 e 10.');
+  const first = d(s1), target = d(goal);
+  return first.lt(7) ? Exact.max(target.mul(3).minus(7).div(2), target.mul(6).minus(first).div(5)) : target.mul(3).minus(first).div(2);
 }
 // Menor nota em centésimos que satisfaz o alvo; arredondamento só da recomendação.
 export function ceilGrade(value: ExactValue): number {
@@ -68,10 +69,11 @@ export function analyze(subject: Subject) {
   };
 }
 export type Remaining = { grade: number | null; exact: boolean; message: string; scope: 'semester' | 'N1' | 'N2' | 'remaining' | 'done' | 'unknown' };
-export function remainingRequired(subject: Subject): Remaining {
+export function remainingRequired(subject: Subject, goal = 7): Remaining {
   const a = analyze(subject), s = subject.s2;
   if (a.target === null) return { grade: null, exact: false, scope: 'unknown', message: 'Conclua ou informe a média de S1 para calcular a meta.' };
-  if (s.mode === 'direct') return s.direct === null ? { grade: ceilGrade(a.target), exact: true, scope: 'semester', message: 'Meta para a média final do segundo semestre.' }
+  const target = requiredSecond(a.first.final!, goal);
+  if (s.mode === 'direct') return s.direct === null ? { grade: ceilGrade(target), exact: true, scope: 'semester', message: 'Meta para a média final do segundo semestre.' }
     : { grade: null, exact: true, scope: 'done', message: 'A média final de S2 já foi informada.' };
   let fixed = d(0), pending = d(0);
   let exact = true, anyFilled = false;
@@ -98,7 +100,7 @@ export function remainingRequired(subject: Subject): Remaining {
     if (groupPending) pendingGroups.push(group);
   }
   if (pending.isZero()) return { grade: null, exact, scope: exact ? 'done' : 'unknown', message: exact ? 'Todas as notas com peso foram preenchidas.' : 'Sem pendências cadastradas. Confirme o planejamento das avaliações para concluir o semestre.' };
-  const grade = Exact.max(0, a.target.minus(fixed).div(pending));
+  const grade = Exact.max(0, target.minus(fixed).div(pending));
   const scope = !anyFilled ? 'semester' : pendingGroups.length === 1 ? pendingGroups[0] : 'remaining';
   return { grade: ceilGrade(grade), exact, scope, message: exact
     ? scope === 'N1' || scope === 'N2' ? `Nota necessária em ${scope} do segundo semestre, considerando as notas já lançadas e os pesos configurados.` : 'Média ponderada necessária nas notas restantes, conforme os pesos configurados.'

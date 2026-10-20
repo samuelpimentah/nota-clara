@@ -21,6 +21,8 @@ export const subjectSchema = z.object({
 export const workspaceSchema = z.object({
   version: z.literal(1), year: z.number().int().min(2000).max(2100),
   catalogVersion: z.literal(2).optional(),
+  personalGoal: z.number().finite().min(7).max(10).optional(),
+  onboardingSeen: z.boolean().optional(),
   theme: z.enum(['light', 'dark']), subjects: z.array(subjectSchema).max(100),
 }).refine(w => new Set(w.subjects.map(s => s.id)).size === w.subjects.length, 'IDs de matérias repetidos.');
 export type Assessment = z.infer<typeof assessmentSchema>;
@@ -69,4 +71,14 @@ export function setBlockGrade(semester: Semester, group: 'N1' | 'N2', grade: num
 export function setBlockMode(semester: Semester, group: 'N1' | 'N2', mode: 'direct' | 'detailed'): Semester {
   return { ...semester, mode: 'detailed', completePlan: mode === 'detailed' ? false : semester.completePlan,
     blocks: { N1: { ...blockConfig(semester, 'N1') }, N2: { ...blockConfig(semester, 'N2') }, [group]: { ...blockConfig(semester, group), mode } } };
+}
+
+export function setSemesterGrade(semester: Semester, grade: number | null): Semester {
+  return { ...semester, mode: grade === null ? 'detailed' : 'direct', direct: grade };
+}
+export function preservePreferences(previous: Workspace, incoming: Workspace): Workspace {
+  return { ...incoming,
+    ...(incoming.personalGoal === undefined && previous.personalGoal !== undefined ? { personalGoal: previous.personalGoal } : {}),
+    ...(incoming.onboardingSeen === undefined && previous.onboardingSeen !== undefined ? { onboardingSeen: previous.onboardingSeen } : {}),
+  };
 }

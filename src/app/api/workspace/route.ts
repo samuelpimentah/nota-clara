@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { currentUser, provider, supabase, checkOrigin, failure, readJson, HttpError } from '@/lib/server';
 import { transaction } from '@/lib/local-store';
-import { emptyWorkspace, upgradeWorkspace, workspaceSchema } from '@/lib/model';
+import { emptyWorkspace, upgradeWorkspace, workspaceSchema, preservePreferences } from '@/lib/model';
 export async function GET() {
   try {
     const user = await currentUser();
@@ -45,7 +45,7 @@ export async function PUT(request: Request) {
       const result = await transaction(store => {
         const current = store.workspaces[user.id];
         if (!current || current.revision !== input.revision) throw new HttpError(409, 'Suas notas mudaram em outra aba. Recarregue os dados antes de continuar.');
-        return store.workspaces[user.id] = { data: input.data, revision: current.revision + 1 };
+        return store.workspaces[user.id] = { data: preservePreferences(current.data,input.data), revision: current.revision + 1 };
       });
       return Response.json({ revision: result.revision });
     }

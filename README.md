@@ -39,7 +39,7 @@ Se a porta 3000 estiver ocupada: `npm run dev -- --port 3001` e abra `http://127
 - Pesos N1/N2 por matéria e semestre, normalizados proporcionalmente. Padrão 50/50; avaliações começam com peso 1.
 - N1, N2 e média final dos dois semestres aparecem separadamente na planilha e nos cartões do celular. Cada coluna abre o semestre correspondente.
 - Colunas de média final estreitas, fontes ampliadas e “Falta tirar” dinâmico: a meta mostra o bloco ou as avaliações restantes, considerando as notas já preenchidas.
-- Metas, limites possíveis, explicações de fórmulas e indicação de média recuperada. Cálculos imediatos, entrada com vírgula, busca, filtros, exportação CSV/Excel e tema persistente.
+- Metas, limites possíveis, explicações de fórmulas e indicação de média recuperada. Cálculos imediatos, entrada com vírgula, busca, filtros, exportação PDF do boletim estimado e tema persistente.
 - Tabela no computador e cartões editáveis no celular, com painel de detalhes acessível por teclado.
 
 O arquivo local é próprio para avaliação em um computador com uma instância do servidor. Não é a base de produção para múltiplas instâncias. Quem tem acesso administrativo ao sistema de arquivos do computador pode ler os arquivos locais. Não publique esse diretório nem as contas de teste.
@@ -110,7 +110,7 @@ Não foram acrescentadas História, Geografia ou Física, que eram somente exemp
 A integração foi configurada em um projeto Supabase real da conta samuelpimentah. Doze verificações online passaram: cadastro por senha, leitura e gravação, novo login, bloqueio de acesso entre contas, acesso anônimo negado e controle de revisões. A configuração abaixo documenta como preparar outro projeto.
 
 1. Crie ou selecione um projeto Supabase sob sua conta.
-2. Execute `supabase/migrations/001_workspaces.sql` no SQL Editor. O script cria a tabela, restrições, trigger de revisão e RLS por `auth.uid()`.
+2. Em um projeto novo, execute `supabase/migrations/001_workspaces.sql` e depois `002_preserve_preferences.sql` no SQL Editor. Em um projeto existente, execute somente a migração 002; ela não altera linhas existentes. O script cria a tabela, restrições, trigger de revisão e RLS por `auth.uid()`.
 3. Em Authentication → Providers → Email, habilite o provedor de senha e **desabilite Confirm email**, pois o aluno entra apenas com usuário/senha.
 4. Copie `.env.example` para `.env.local` e preencha a URL do projeto e a **publishable key**, disponível nas configurações de API do projeto. Nenhuma service_role é necessária.
 5. Reinicie o servidor. O aviso de ambiente local deixará de aparecer quando a integração estiver configurada.
@@ -118,7 +118,7 @@ A integração foi configurada em um projeto Supabase real da conta samuelpiment
 
 O Supabase Auth exige um identificador de e-mail ou telefone internamente. Para preservar o cadastro apenas com usuário/senha, o servidor converte o username normalizado em um identificador determinístico `SHA-256(username)@accounts.notaclara.invalid`. Esse endereço reservado é **um identificador técnico sem caixa postal**, não um e-mail solicitado ao aluno. A senha é validada pelo Supabase Auth. Não são usados e-mails reais, confirmação ou recuperação por e-mail. Essa estratégia foi validada no projeto real, com confirmação por e-mail desabilitada por autorização explícita do proprietário.
 
-As contas locais não são transferidas automaticamente para Supabase. Ao ativá-lo, o cadastro passa a pertencer ao provedor externo. Use Exportar minhas notas para guardar uma cópia CSV ou Excel antes dessa mudança. A versão atual exporta cópias; não possui importação automática.
+As contas locais não são transferidas automaticamente para Supabase. Ao ativá-lo, o cadastro passa a pertencer ao provedor externo. Use Exportar boletim PDF para guardar uma estimativa legível. A importação de PDF permite revisar e trazer médias semestrais; não transfere avaliações detalhadas ou contas entre provedores.
 
 O caminho de produção usa Next.js App Router e rotas de servidor. É compatível com uma futura publicação na Vercel; o armazenamento local é bloqueado quando `VERCEL` está definido. O cliente recebe somente URL/chave pública, e o servidor valida a identidade com `auth.getUser()` em cada operação. O banco aplica RLS independentemente do servidor. O proxy renova sessões Supabase conforme o fluxo oficial de SSR.
 
@@ -180,3 +180,15 @@ A coluna **Final do ano**, ao lado da situação, mostra a média anual com o aj
 ### Exportação de notas
 
 Em **Exportar minhas notas**, escolha **Baixar CSV** ou **Baixar Excel (.xlsx)**. Ambos incluem todas as matérias, inclusive ocultas, e o resumo com notas, metas, situação e média anual. O CSV usa UTF-8 com BOM, separador ponto e vírgula e vírgula decimal. O Excel possui as abas Notas e Avaliações, com notas numéricas, filtros e cabeçalho fixo. Avaliações preservadas que não participam do cálculo são identificadas. Campos sem nota ficam vazios; zero continua sendo zero. Os resultados são um retrato do momento da exportação, sem recálculo no arquivo nem importação automática. A cópia JSON técnica permanece disponível nas ações de recuperação de falha de salvamento.
+
+## Boletim em PDF e preferências
+
+**Exportar boletim PDF** gera uma tabela A4 intitulada **Estimativa de situação atual do boletim**, sem faltas ou frequência. Inclui médias semestrais, média anual quando concluída, meta restante e situação escolar. É um documento não oficial, com data de emissão e aviso de pendências. Não substitui o boletim da escola.
+
+**Importar PDF** lê localmente PDFs com texto selecionável no formato do boletim anexado: Disciplinas, 1ºSem e 2ºSem. Não inclui OCR para documentos escaneados. Limites: 8 MB e 20 páginas. Antes de salvar, uma prévia permite conferir o vínculo de cada disciplina e selecionar cada média. Notas existentes vêm desmarcadas; traços não viram zero nem apagam dados. Ano divergente exige confirmação. Apenas os semestres selecionados recebem a média direta; pesos, avaliações, nomes, IDs, visibilidade e o restante da planilha permanecem guardados. Não importa frequência, recuperação final ou metadados do aluno.
+
+A célula **Final** de cada semestre aceita edição direta. Apagá-la restaura o cálculo pelas N1/N2 guardadas. Digitar N1/N2 também volta a usar os blocos.
+
+Em **Gerenciar**, a meta pessoal pode ir de 7 a 10, inclusive com vírgula decimal. Isso altera a projeção restante; as situações escolares continuam usando o critério oficial 7. A introdução aparece uma vez por conta e pode ser reaberta pela ajuda.
+
+As novas preferências são opcionais no formato versão 1. Planilhas antigas usam meta 7 até uma alteração explícita; nenhuma nota é inicializada ou substituída ao atualizar. A migração 002 preserva essas preferências quando um cliente antigo as omite em uma gravação posterior.

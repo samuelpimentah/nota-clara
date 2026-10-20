@@ -1,19 +1,19 @@
 'use client';
 import { useState } from 'react';
 import { ArrowDown, ArrowUp, Calculator, Check, ChevronRight, Info, LockKeyhole, Plus, Trash2 } from 'lucide-react';
-import { analyze, ceilGrade, fmt, groupMean, remainingLabel, remainingRequired } from '@/lib/calculations';
+import { analyze, ceilGrade, fmt, groupMean, remainingLabel, remainingRequired, requiredSecond } from '@/lib/calculations';
 import { ANNUAL_WEIGHTS, blockConfig, setBlockGrade, setBlockMode, type Assessment, type Semester, type Subject } from '@/lib/model';
 import type { SemesterKey } from './semester-overview';
 import { GradeInput, Modal, StatusBadge } from './ui';
 
-export function SubjectPanel({ subject, onChange, onClose, saveLabel, saveError, onRetry, initialSemester = 's2', initialGroup = 'N1' }: {
+export function SubjectPanel({ subject, onChange, onClose, saveLabel, saveError, onRetry, initialSemester = 's2', initialGroup = 'N1', goal = 7 }: {
   subject: Subject; onChange: (s: Subject) => void; onClose: () => void; saveLabel: string; saveError: string; onRetry: () => void;
-  initialSemester?: SemesterKey; initialGroup?: 'N1' | 'N2';
+  goal?: number; initialSemester?: SemesterKey; initialGroup?: 'N1' | 'N2';
 }) {
   const [tab, setTab] = useState<SemesterKey>(initialSemester);
   const [group, setGroup] = useState<'N1' | 'N2'>(initialGroup);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
-  const s = subject[tab], a = analyze(subject), remaining = remainingRequired(subject);
+  const s = subject[tab], a = analyze(subject), remaining = remainingRequired(subject,goal);
   const config = blockConfig(s, group), semesterName = tab === 's1' ? '1º semestre' : '2º semestre';
   const items = s.assessments.filter(item => item.group === group);
   const requiresPlan = (['N1','N2'] as const).some(g => s.weights[g] > 0 && blockConfig(s,g).mode === 'detailed');
@@ -35,7 +35,7 @@ export function SubjectPanel({ subject, onChange, onClose, saveLabel, saveError,
   }
   return <Modal title="Notas e avaliações" onClose={onClose} wide>
     <div className="subject-panel-title"><input aria-label="Nome da matéria" defaultValue={subject.name} maxLength={120} onBlur={e => { if (e.target.value.trim()) onChange({ ...subject, name: e.target.value.trim() }); else e.target.value = subject.name; }} /><StatusBadge status={a.status} /></div>
-    <div className="target-card"><span className="small-icon"><Calculator size={21} /></span><div><span>Falta para a aprovação direta</span><strong>{remaining.grade === null ? a.status === 'guaranteed' ? 'Meta atingida' : remainingLabel(remaining.scope) : `${fmt(remaining.grade)} · ${remainingLabel(remaining.scope)}`}</strong></div></div>
+    <div className="target-card"><span className="small-icon"><Calculator size={21} /></span><div><span>{goal===7?'Falta para a aprovação direta':`Falta para sua meta pessoal de ${fmt(goal)}`}</span><strong>{remaining.grade === null ? a.min.gte(goal) ? 'Meta atingida' : remaining.scope === 'done' ? 'Meta pessoal não atingida' : remainingLabel(remaining.scope) : `${fmt(remaining.grade)} · ${remainingLabel(remaining.scope)}`}</strong></div></div>
     <div className="semester-tabs">{(['s1','s2'] as const).map(key => <button key={key} className={tab === key ? 'active' : ''} onClick={() => { setTab(key); setConfirmDelete(null); }}>{key === 's1' ? '1º semestre' : '2º semestre'} <small>Peso anual fixo {ANNUAL_WEIGHTS[key]}</small></button>)}</div>
     <div className="panel-section">
       <p className="fixed-annual-note"><LockKeyhole size={14} /><span>Pesos anuais fixos: S1 = 1 e S2 = 2. Os pesos editáveis pertencem a N1, N2 e às avaliações dentro de cada bloco.</span></p>
@@ -62,8 +62,8 @@ export function SubjectPanel({ subject, onChange, onClose, saveLabel, saveError,
         <p className="hint entry-preservation">Alternar nota única e avaliações preserva os dois conjuntos. Somente o modo selecionado entra na média.</p>
       </>}
     </div>
-    <div className="panel-insight"><span className="eyebrow"><Calculator size={14} /> O QUE FALTA NO 2º SEMESTRE</span><strong>{remaining.grade === null ? remainingLabel(remaining.scope) : remaining.grade>10 ? `${fmt(remaining.grade)} · acima de 10` : `${fmt(remaining.grade)} · ${remainingLabel(remaining.scope)}`}</strong><p>{remaining.message}</p><span className={`precision-tag ${remaining.exact?'':'estimate'}`}>{remaining.exact?<Check size={12}/>:<Info size={12}/>}{remaining.exact?'Conforme as notas e os pesos informados':'Estimativa'}</span></div>
-    <details className="formula-details"><summary>Entenda o cálculo <ChevronRight size={16}/></summary><div><p><strong>Média anual:</strong> (S1 ajustado + 2 × S2) ÷ 3, com meta 7.</p><p><strong>Cada bloco:</strong> nota única ou soma(nota × peso) ÷ soma dos pesos das avaliações desse bloco. N1 e N2 são combinados pelos pesos do semestre.</p><p><strong>Média recuperada:</strong> se S1 &lt; 7 e S2 &gt; S1, S1 ajustado = mínimo entre 7 e (S1 + S2) ÷ 2.</p>{a.target!==null&&<p>Meta da média completa de S2: <strong>{fmt(ceilGrade(a.target))}</strong>. “Falta tirar” desconta o que já foi preenchido.</p>}{a.adjusted!==null&&a.first.final!==null&&a.adjusted.gt(a.first.final)&&<p className="recovery-note">S1 ajustado de {fmt(a.first.final)} para {fmt(a.adjusted)}.</p>}<p>Faixa anual possível: {fmt(a.min)} a {fmt(a.max)}. A aprovação usa precisão integral; metas são arredondadas para cima.</p></div></details>
+    <div className="panel-insight"><span className="eyebrow"><Calculator size={14} /> O QUE FALTA PARA SUA META NO 2º SEMESTRE</span><strong>{remaining.grade === null ? remainingLabel(remaining.scope) : remaining.grade>10 ? `${fmt(remaining.grade)} · acima de 10` : `${fmt(remaining.grade)} · ${remainingLabel(remaining.scope)}`}</strong><p>{remaining.message}</p><span className={`precision-tag ${remaining.exact?'':'estimate'}`}>{remaining.exact?<Check size={12}/>:<Info size={12}/>}{remaining.exact?'Conforme as notas e os pesos informados':'Estimativa'}</span></div>
+    <details className="formula-details"><summary>Entenda o cálculo <ChevronRight size={16}/></summary><div><p><strong>Média anual:</strong> (S1 ajustado + 2 × S2) ÷ 3, com aprovação escolar em 7,0. Sua meta pessoal atual é {fmt(goal)}.</p><p><strong>Cada bloco:</strong> nota única ou soma(nota × peso) ÷ soma dos pesos das avaliações desse bloco. N1 e N2 são combinados pelos pesos do semestre.</p><p><strong>Média recuperada:</strong> se S1 &lt; 7 e S2 &gt; S1, S1 ajustado = mínimo entre 7 e (S1 + S2) ÷ 2.</p>{a.target!==null&&<p>Média de S2 para aprovação escolar: <strong>{fmt(ceilGrade(a.target))}</strong>. “Falta tirar” desconta o que já foi preenchido.</p>}{goal>7&&a.first.final!==null&&<p>Média de S2 para sua meta pessoal: <strong>{fmt(ceilGrade(requiredSecond(a.first.final,goal)))}</strong>.</p>}{a.adjusted!==null&&a.first.final!==null&&a.adjusted.gt(a.first.final)&&<p className="recovery-note">S1 ajustado de {fmt(a.first.final)} para {fmt(a.adjusted)}.</p>}<p>Faixa anual possível: {fmt(a.min)} a {fmt(a.max)}. A aprovação usa precisão integral; metas são arredondadas para cima.</p></div></details>
     {saveError&&<div className="notice error panel-save-error" role="alert">{saveError} <button className="text-button" onClick={onRetry}>Tentar salvar</button></div>}
     <footer className="panel-footer"><span aria-live="polite"><Info size={14}/>{saveLabel}</span><button className="button primary" onClick={onClose}>Concluir <Check size={16}/></button></footer>
   </Modal>;
