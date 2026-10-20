@@ -4,7 +4,7 @@
 
 Aplicação publicada, com autorização explícita, em https://samuelpimentah.github.io/nota-clara/. Repositório pessoal: https://github.com/samuelpimentah/nota-clara.
 
-GitHub Actions: https://github.com/samuelpimentah/nota-clara/actions/runs/39348989321 — build e deploy concluídos com sucesso. Os avisos do workflow são de migração de runtime de actions oficiais e imagem Ubuntu; não houve falha.
+GitHub Actions: https://github.com/samuelpimentah/nota-clara/actions/runs/39421109152 — build e deploy concluídos com sucesso. Os avisos do workflow são de migração de runtime de actions oficiais e imagem Ubuntu; não houve falha.
 
 ## Cálculos e exportação
 
@@ -58,3 +58,7 @@ As notas reais do proprietário continuam no computador e não foram migradas au
 - PDF A4 com tabela, aviso não oficial e data; inspeção visual de uma página e de todas as seis páginas de um cenário com 100 nomes longos. Linhas não são quebradas entre páginas e o rodapé não sobrepõe a tabela.
 - Migração 002 aplicada sem atualizar linhas. Os nove registros e sua assinatura de conteúdo, revisão e data ficaram idênticos antes/depois. Teste real posterior, apenas na conta qa_ui, confirmou que um cliente antigo não apaga as preferências; todas as suas notas permaneceram idênticas.
 - Limites: PDFs precisam conter texto selecionável; não há OCR. A conferência do viewport móvel da revisão anterior permanece documentada acima; a ferramenta de viewport não aplicou o novo tamanho nesta sessão, portanto não foi registrada uma nova validação móvel.
+
+### Publicação desta atualização
+
+Commit 22a12b2 publicado pelo workflow 39421109152: build e deploy concluídos com sucesso. No endereço público, conferidos a introdução, os campos finais editáveis e os novos controles PDF. Console sem erros ou avisos. Worker PDF e fontes retornaram HTTP 200 no caminho /nota-clara/. A sessão existente foi mantida, sem gravações de teste na planilha do usuário; os testes de edição/importação foram feitos na conta local de QA. Nenhum dado do anexo foi enviado ao repositório.
