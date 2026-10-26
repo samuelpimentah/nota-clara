@@ -107,7 +107,7 @@ input[type=checkbox] { width:17px; height:17px; accent-color:#18836f; cursor:poi
 .sidebar-note-icon { color:#a3dbc6; display:inline-flex; padding:6px; border-radius:9px; border:1px solid #49655e; background:#36524d; }
 .sidebar-note h3 { font-size:13px; font-weight:600; margin-top:15px; color:#e0efea; position:relative; z-index:1; }
 .sidebar-note p { font-size:11px; line-height:1.9; color:#a4bab8; margin-top:8px; position:relative; z-index:1; }
-.sidebar-note button { display:flex; align-items:center; gap:12px; margin-top:19px; color:#bce5d5; border:0; background:none; padding:0; font-size:10px; position:relative; z-index:1; }
+.sidebar-note button { display:flex; align-items:center; gap:12px; margin-top:13px; color:#bce5d5; border:0; background:none; padding:0; font-size:10px; position:relative; z-index:1; }
 .sidebar-orbit { position:absolute; width:170px; height:170px; border:1px solid #567f6930; border-radius:50%; top:25px; right:-90px; box-shadow:0 0 0 22px #507c6012,0 0 0 44px #507c6009; }
 .sidebar-bottom { margin-top:auto; padding-top:50px; }
 .private-note { display:flex; gap:10px; align-items:center; padding:15px 10px; border-bottom:1px solid #2b4247; margin-bottom:14px; color:#7b9b98; font-size:10px; }
@@ -192,7 +192,7 @@ input[type=checkbox] { width:17px; height:17px; accent-color:#18836f; cursor:poi
 .table-toolbar .search-field { width:200px; }
 .table-scroll { overflow-x:auto; }
 table { width:100%; border-collapse:collapse; text-align:left; white-space:nowrap; }
-thead { background:var(--surface-soft); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+thead { background:var(--surface-soft); border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent); }
 th { padding:12px 10px; font-size:8px; font-weight:600; letter-spacing:.5px; color:var(--muted); }
 th small { font-size:6px; font-weight:400; color:#98a5ac; margin-left:3px; }
 th:first-child { padding-left:23px; width:29%; }
@@ -200,9 +200,9 @@ th:last-child { width:32px; padding:0; }
 th.target-column { background:#eaf4ed80; color:#6a8d75; }
 [data-theme=dark] th.target-column { background:#293e34; color:#a1c6ae; }
 th svg { vertical-align:middle; margin-left:4px; }
-tbody tr { border-bottom:1px solid var(--line); }
+tbody tr { border-bottom:1px solid color-mix(in srgb,var(--line) 36%,transparent); }
 tbody tr:last-child { border-bottom:0; }
-tbody tr:hover { background:var(--surface-soft); }
+tbody tr:hover { background:color-mix(in srgb,var(--surface-soft) 45%,transparent); }
 td { font-size:11px; padding:13px 10px; }
 td:first-child { padding-left:23px; }
 td:last-child { padding:8px 8px 8px 0; }
@@ -379,12 +379,11 @@ td:last-child { padding:8px 8px 8px 0; }
 .table-semester-hint { padding:0 23px 15px; font-size:10px; line-height:1.7; color:var(--muted); }
 .table-scroll .annual-table { min-width:1000px; }
 .annual-table th.subject-column { width:24%; }
-.annual-table .semester-column { text-align:center; padding:12px 8px 9px; border-left:1px solid var(--line); font-size:10px; color:var(--ink); }
+.annual-table .semester-column { text-align:center; padding:12px 8px 9px; font-size:10px; color:var(--ink); }
 .annual-table .semester-column small { display:block; margin:5px 0 0; font-size:7px; letter-spacing:.6px; }
 .annual-table th.grade-column { width:60px; text-align:center; padding:8px 6px; border-top:1px solid var(--line); font-size:8px; }
-.annual-table .first-semester-column,.annual-table .first-semester-cell { background:color-mix(in srgb,var(--surface-soft) 65%,transparent); }
+.annual-table .first-semester-column,.annual-table .first-semester-cell { background:color-mix(in srgb,var(--surface-soft) 40%,transparent); }
 .annual-table td:nth-child(n+2):nth-child(-n+7) { text-align:center; }
-.annual-table td:nth-child(2),.annual-table td:nth-child(5) { border-left:1px solid var(--line); }
 .fixed-annual-note { display:flex; align-items:flex-start; gap:8px; padding:11px 12px; background:var(--surface-soft); border:1px solid var(--line); border-radius:7px; color:var(--muted); font-size:10px; line-height:1.8; margin-bottom:22px; }
 .fixed-annual-note svg { flex-shrink:0; margin-top:2px; color:var(--teal); }
 .group-overview { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:25px; }
