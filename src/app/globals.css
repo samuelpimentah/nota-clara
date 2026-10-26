@@ -191,7 +191,7 @@ input[type=checkbox] { width:17px; height:17px; accent-color:#18836f; cursor:poi
 .search-field button { border:0; background:none; color:var(--muted); display:flex; padding:0; }
 .table-toolbar .search-field { width:200px; }
 .table-scroll { overflow-x:auto; }
-table { width:100%; border-collapse:collapse; text-align:left; white-space:nowrap; }
+table { width:100%; border-collapse:separate; border-spacing:0 8px; text-align:left; white-space:nowrap; }
 thead { background:var(--surface-soft); border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent); }
 th { padding:12px 10px; font-size:8px; font-weight:600; letter-spacing:.5px; color:var(--muted); }
 th small { font-size:6px; font-weight:400; color:#98a5ac; margin-left:3px; }
@@ -200,9 +200,8 @@ th:last-child { width:32px; padding:0; }
 th.target-column { background:#eaf4ed80; color:#6a8d75; }
 [data-theme=dark] th.target-column { background:#293e34; color:#a1c6ae; }
 th svg { vertical-align:middle; margin-left:4px; }
-tbody tr { border-bottom:1px solid color-mix(in srgb,var(--line) 36%,transparent); }
-tbody tr:last-child { border-bottom:0; }
-tbody tr:hover { background:color-mix(in srgb,var(--surface-soft) 45%,transparent); }
+tbody tr { border:0; }
+tbody tr:hover { background:transparent; }
 td { font-size:11px; padding:13px 10px; }
 td:first-child { padding-left:23px; }
 td:last-child { padding:8px 8px 8px 0; }
@@ -349,7 +348,7 @@ td:last-child { padding:8px 8px 8px 0; }
 .manage-list>label>span:nth-child(2) { flex:1; line-height:1.6; font-size:11px; }
 .manage-list small { display:block; color:var(--muted); font-size:9px; font-weight:400; }
 .manage-list input { margin:0; }
-.mobile-subject-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr)); gap:14px; }
+.mobile-subject-list { display:none; }
 @media(max-width:600px) {
   .mobile-subject-list { grid-template-columns:1fr; gap:12px; }
   .mobile-subject { border:1px solid var(--line); border-radius:14px; padding:15px; background:var(--surface); box-shadow:var(--shadow); }
@@ -519,38 +518,43 @@ td:last-child { padding:8px 8px 8px 0; }
 .below-table>.text-button { font-size:14px; }
 .bottom-note { font-size:14px; line-height:1.8; align-items:flex-start; color:var(--muted); padding:20px 0 25px; }
 
-/* Visão por cartões: as matérias deixam de ocupar linhas de uma grade única. */
+/* A planilha mantém as colunas, com cada linha tratada como um cartão. */
 .table-heading { padding:0 0 18px; }
 .table-toolbar { padding:0 0 14px; }
 .table-semester-hint { padding:0 0 16px; }
 .table-footer { padding:15px 0 0; }
-.mobile-subject-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr)); gap:14px; }
-.mobile-subject { min-width:0; margin:0; padding:17px; border:1px solid color-mix(in srgb,var(--line) 82%,transparent); border-radius:14px; background:var(--surface); box-shadow:var(--shadow); transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease; }
-.mobile-subject:hover { border-color:color-mix(in srgb,var(--teal) 28%,var(--line)); transform:translateY(-1px); }
-.mobile-subject>header { gap:12px; }
-.mobile-subject .subject-link { min-width:0; max-width:none; flex:1; font-size:14px; }
-.mobile-subject .subject-symbol { width:34px; height:34px; font-size:10px; }
-.mobile-semesters { grid-template-columns:1fr; gap:10px; margin:14px 0; }
-.mobile-semester { border-color:color-mix(in srgb,var(--line) 75%,transparent); border-radius:11px; background:var(--surface-soft); }
-.mobile-semester>header { padding:11px 13px 9px; border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent); }
-.mobile-semester>header>strong { font-size:13px; }
-.mobile-semester>header>span { font-size:9px; }
-.mobile-semester-grades { grid-template-columns:1fr 1fr .7fr; padding:8px 10px 10px; gap:7px; }
-.mobile-block-grade { padding:6px 0; }
-.mobile-block-grade>span { font-size:12px; }
-.mobile-block-grade>small { font-size:9px; }
-.mobile-semester-grades>button,.mobile-semester-average { border-radius:8px; }
-.mobile-semester-target { padding:12px 14px; border-radius:10px; margin-bottom:13px; }
-.mobile-subject>footer { border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent); padding-top:13px; }
-.mobile-status-annual>div>span { font-size:12px; }
-.mobile-subject>footer>.text-button { margin-top:7px; }
-.mobile-subject>.recovered { display:block; margin-top:10px; }
-@media(max-width:760px) {
+thead { background:transparent; border:0; }
+thead th { background:transparent; }
+.annual-table tbody td { background:var(--surface); border-top:1px solid color-mix(in srgb,var(--line) 72%,transparent); border-bottom:1px solid color-mix(in srgb,var(--line) 72%,transparent); }
+.annual-table tbody tr:hover td { background:color-mix(in srgb,var(--surface) 88%,var(--surface-soft)); }
+.annual-table tbody td:first-child { border-left:1px solid color-mix(in srgb,var(--line) 72%,transparent); border-radius:11px 0 0 11px; }
+.annual-table tbody td:last-child { border-right:1px solid color-mix(in srgb,var(--line) 72%,transparent); border-radius:0 11px 11px 0; }
+.annual-table .first-semester-cell { background:var(--surface); }
+.annual-table tbody tr { filter:drop-shadow(0 2px 4px color-mix(in srgb,var(--ink) 5%,transparent)); }
+@media(max-width:900px) {
   .table-heading { padding:0 0 16px; }
   .table-toolbar { padding:0 0 13px; }
-  .mobile-subject-list { grid-template-columns:1fr; gap:12px; }
-  .mobile-semesters { grid-template-columns:1fr; }
-  .mobile-subject .subject-link { font-size:15px; }
+  .spreadsheet .table-scroll { display:none; }
+  .mobile-subject-list { display:grid; grid-template-columns:1fr; gap:12px; }
+  .mobile-subject { min-width:0; margin:0; padding:17px; border:1px solid color-mix(in srgb,var(--line) 82%,transparent); border-radius:14px; background:var(--surface); box-shadow:var(--shadow); }
+  .mobile-subject>header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .mobile-subject .subject-link { min-width:0; max-width:none; flex:1; font-size:14px; }
+  .mobile-subject .subject-symbol { width:34px; height:34px; font-size:10px; }
+  .mobile-semesters { grid-template-columns:1fr; gap:10px; margin:14px 0; }
+  .mobile-semester { border-color:color-mix(in srgb,var(--line) 75%,transparent); border-radius:11px; background:var(--surface-soft); }
+  .mobile-semester>header { padding:11px 13px 9px; border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent); }
+  .mobile-semester>header>strong { font-size:13px; }
+  .mobile-semester>header>span { font-size:9px; }
+  .mobile-semester-grades { grid-template-columns:1fr 1fr .7fr; padding:8px 10px 10px; gap:7px; }
+  .mobile-block-grade { padding:6px 0; }
+  .mobile-block-grade>span { font-size:12px; }
+  .mobile-block-grade>small { font-size:9px; }
+  .mobile-semester-grades>button,.mobile-semester-average { border-radius:8px; }
+  .mobile-semester-target { padding:12px 14px; border-radius:10px; margin-bottom:13px; }
+  .mobile-subject>footer { border-top:1px solid color-mix(in srgb,var(--line) 65%,transparent); padding-top:13px; }
+  .mobile-status-annual>div>span { font-size:12px; }
+  .mobile-subject>footer>.text-button { margin-top:7px; }
+  .mobile-subject>.recovered { display:block; margin-top:10px; }
 }
 .bottom-note>svg { flex-shrink:0; margin-top:5px; width:18px; height:18px; }
 .bottom-note button { font-size:14px; color:var(--teal); line-height:inherit; }
