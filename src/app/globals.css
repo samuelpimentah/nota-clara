@@ -197,8 +197,8 @@ th { padding:12px 10px; font-size:8px; font-weight:600; letter-spacing:.5px; col
 th small { font-size:6px; font-weight:400; color:#98a5ac; margin-left:3px; }
 th:first-child { padding-left:23px; width:29%; }
 th:last-child { width:32px; padding:0; }
-th.target-column { background:#eaf4ed80; color:#6a8d75; }
-[data-theme=dark] th.target-column { background:#293e34; color:#a1c6ae; }
+th.target-column { background:transparent; color:#6a8d75; }
+[data-theme=dark] th.target-column { background:transparent; color:#a1c6ae; }
 th svg { vertical-align:middle; margin-left:4px; }
 tbody tr { border:0; }
 tbody tr:hover { background:transparent; }
@@ -225,8 +225,6 @@ td:last-child { padding:8px 8px 8px 0; }
 .semester-pending { display:block; font-size:9px; color:#84939b; }
 .semester-pending small { display:block; font-size:7px; color:#a0adb4; margin-top:4px; }
 .semester-result { font-size:12px; font-weight:600; }
-.target-cell { background:#eaf4ed33; }
-[data-theme=dark] .target-cell { background:#264b3122; }
 .target-cell strong { font:700 15px Manrope,sans-serif; color:var(--teal); }
 .target-cell small { display:block; font-size:7px; color:#90a69b; margin-top:3px; }
 .target-placeholder { color:#a7b6ad; font-size:13px; }
