@@ -19,8 +19,7 @@ jobs:
     name: Testes e build
     runs-on: ubuntu-latest
     env:
-      LOCAL_DATA_DIR: ${{ runner.temp }}/nota-clara-ci-data
-      NEXT_TELEMETRY_DISABLED: 1
+      NEXT_TELEMETRY_DISABLED: '1'
 
     steps:
       - name: Baixar código
@@ -54,6 +53,7 @@ jobs:
         env:
           TEST_BASE_URL: http://127.0.0.1:3100
         run: |
+          export LOCAL_DATA_DIR="$RUNNER_TEMP/nota-clara-ci-data"
           mkdir -p "$LOCAL_DATA_DIR"
           npm run dev -- --port 3100 > "$RUNNER_TEMP/nota-clara-next.log" 2>&1 &
           server_pid=$!
