@@ -1,0 +1,77 @@
+name: Pipeline CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Testes e build
+    runs-on: ubuntu-latest
+    env:
+      LOCAL_DATA_DIR: ${{ runner.temp }}/nota-clara-ci-data
+      NEXT_TELEMETRY_DISABLED: 1
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v6
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar TypeScript
+        run: npm run typecheck
+
+      - name: Executar testes unitários
+        run: npm test
+
+      - name: Configurar GitHub Pages para validar o build
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Validar build estático do Pages
+        run: npm run build:pages
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - name: Executar testes de integração HTTP
+        env:
+          TEST_BASE_URL: http://127.0.0.1:3100
+        run: |
+          mkdir -p "$LOCAL_DATA_DIR"
+          npm run dev -- --port 3100 > "$RUNNER_TEMP/nota-clara-next.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+
+          ready=false
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:3100/api/auth > /dev/null; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$ready" != true ]; then
+            cat "$RUNNER_TEMP/nota-clara-next.log"
+            echo "O servidor local não iniciou a tempo." >&2
+            exit 1
+          fi
+
+          npm run test:integration
