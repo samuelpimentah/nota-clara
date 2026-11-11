@@ -5,14 +5,15 @@ import { Modal } from './ui';
 
 export function RulesOverview({ onGuide }: { onGuide: () => void }) {
   return <section className="rules-overview" aria-label="Regras do cálculo">
-    <header><div><span className="eyebrow"><Calculator size={16}/> ENTENDA O CAMINHO DA NOTA</span><h2>O que entra em cada cálculo</h2></div><button className="button secondary" onClick={onGuide}><BookOpen size={16}/> Como configurar os pesos</button></header>
+    <header><div><h2>Como calculamos</h2></div><button className="button secondary" onClick={onGuide}><BookOpen size={16}/> Guia de pesos</button></header>
     <div className="rules-steps">
-      <article><span className="rule-number">1</span><h3>Primeiro, o semestre</h3><code>(N1 × peso N1 + N2 × peso N2) ÷ soma dos pesos</code><p>Por padrão, N1 e N2 valem 50% cada. As avaliações têm pesos <strong>dentro de seu próprio bloco</strong>. A média FINAL direta substitui N1/N2 no cálculo, preservando os lançamentos.</p></article>
-      <article><span className="rule-number">2</span><h3>S1 pode ser recuperado</h3><code>S1 ajustado = menor entre 7 e (S1 + S2) ÷ 2</code><p>Isso só vale se <strong>S1 &lt; 7 e S2 &gt; S1</strong>. S2 é a média do segundo semestre. O ajuste pode elevar S1 <strong>até 7,0</strong>; não transforma toda nota em 7. Nos demais casos, S1 fica como está.</p></article>
-      <article><span className="rule-number">3</span><h3>Depois, a média anual</h3><code>(S1 ajustado + 2 × S2) ÷ 3</code><p>S1 tem peso anual fixo 1; S2, peso 2. Aprovação direta exige <strong>média ≥ 7,0</strong>. A meta pessoal muda o “Falta tirar”, mas não a regra da escola.</p></article>
+      <article><span className="rule-number">1</span><h3>Média do semestre</h3><code>(N1 × peso N1 + N2 × peso N2) ÷ soma dos pesos</code><p>Padrão: <strong>50% para cada bloco</strong>. O peso de uma avaliação vale dentro de N1 ou N2.</p></article>
+      <article><span className="rule-number">2</span><h3>Recuperação de S1</h3><code>S1 ajustado = menor entre 7 e (S1 + S2) ÷ 2</code><p>Se <strong>S1 &lt; 7 e S2 &gt; S1</strong>, o ajuste pode elevar S1 <strong>até 7,0</strong>. Não garante nota 7. Nos demais casos, S1 não muda.</p></article>
+      <article><span className="rule-number">3</span><h3>Média anual</h3><code>(S1 ajustado + 2 × S2) ÷ 3</code><p>Pesos fixos: <strong>S1 = 1 · S2 = 2</strong>.<br/>Aprovação direta: <strong>média ≥ 7,0</strong>.</p></article>
     </div>
-    <div className="rule-example"><strong>Exemplo com recuperação:</strong> S1 = 6,0 e S2 = 7,2 → S1 ajustado = 6,6 → (6,6 + 2 × 7,2) ÷ 3 = <strong>7,0</strong>. Sem esse ajuste de S1, seriam necessários 7,5 em S2. A meta do site já considera a média recuperada.</div>
+    <details className="rules-more"><summary>Ver exemplo e detalhes</summary><div className="rule-example"><strong>Exemplo com recuperação:</strong> S1 = 6,0 e S2 = 7,2 → S1 ajustado = 6,6 → (6,6 + 2 × 7,2) ÷ 3 = <strong>7,0</strong>. Sem esse ajuste de S1, seriam necessários 7,5 em S2. A meta do site já considera a média recuperada.</div>
     <p className="rules-footnote">“Falta tirar” desconta as notas já preenchidas. Avaliações futuras devem estar cadastradas com nota vazia e planejamento confirmado para uma resposta exata. Sem isso, a projeção é estimativa. Não há arredondamento oficial informado: o status usa o valor exato; a recomendação sobe para o próximo centésimo.</p>
+    <p className="rules-footnote">S1 e S2 são as médias do 1º e 2º semestre. A média FINAL direta substitui N1/N2 no cálculo e preserva os lançamentos. A meta pessoal, em Gerenciar, muda o “Falta tirar”, sem alterar a aprovação escolar.</p></details>
   </section>;
 }
 const guideSteps = [
