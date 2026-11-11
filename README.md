@@ -2,6 +2,8 @@
 
 Planilha escolar com metas de aprovação direta, interface em português, modo claro/escuro, contas por **nome de usuário e senha** e salvamento automático.
 
+**Revisão de cálculos (11/11/2026):** reabertura autorizada após a validação local. Para avaliar localmente as regras visuais, os avisos, o tutorial com capturas reais e o rascunho sem login, veja [o registro da revisão](docs/revisao-calculos.md). A página inicial foi restaurada para esta publicação autorizada.
+
 **Publicado com autorização do proprietário:** [acessar Nota Clara](https://samuelpimentah.github.io/nota-clara/) · [repositório](https://github.com/samuelpimentah/nota-clara). O site usa GitHub Pages para a interface e Supabase para contas e notas. Cadastros online são separados das contas locais; notas locais não são transferidas automaticamente.
 
 ## Executar no Windows
@@ -15,7 +17,7 @@ npm ci
 npm run dev
 ```
 
-Abra **http://127.0.0.1:3000** e escolha **Criar conta**. Não há conta padrão, notas pré-preenchidas nem necessidade de cadastrar e-mail. Usuários têm entre 3 e 30 caracteres: letras sem acento, números, ponto, hífen ou sublinhado. Maiúsculas são normalizadas. Senhas novas têm pelo menos 10 caracteres. Não há recuperação de senha, conforme solicitado.
+Abra **http://127.0.0.1:3000** e escolha **Criar conta** ou **Usar sem login**. O modo sem login usa um rascunho provisório neste navegador, recuperável por até 24 horas após a última edição; não tem backup nem sincronização. Ele não importa nem substitui as notas de uma conta. Não há conta padrão, notas pré-preenchidas nem necessidade de cadastrar e-mail. Usuários têm entre 3 e 30 caracteres: letras sem acento, números, ponto, hífen ou sublinhado. Maiúsculas são normalizadas. Senhas novas têm pelo menos 10 caracteres. Não há recuperação de senha, conforme solicitado.
 
 Para encerrar, use `Ctrl+C` no terminal. Para testar o build local de produção:
 
@@ -30,7 +32,7 @@ Se a porta 3000 estiver ocupada: `npm run dev -- --port 3001` e abra `http://127
 
 - Cadastro, login, logout e sessão persistente por 30 dias.
 - Senhas derivadas com scrypt e sal aleatório; tokens de sessão aleatórios, armazenados no servidor apenas como SHA-256. Cookie HttpOnly e SameSite=Lax; Secure quando servido em HTTPS.
-- Notas e preferências salvas em **`.local-data/database.json` no servidor**, sem localStorage. Cada conta tem uma planilha independente. `.local-data` e `.env` são ignorados pelo Git.
+- Nas contas locais, notas e preferências são salvas em **`.local-data/database.json` no servidor**. Cada conta tem uma planilha independente. Apenas o modo sem login usa localStorage, em uma chave separada e com expiração; não é o armazenamento das contas. `.local-data` e `.env` são ignorados pelo Git.
 - Controle de concorrência por revisão e gravação atômica com trava de arquivo. Alterações conflitantes não sobrescrevem silenciosamente outra aba. A interface permite tentar salvar, exportar uma cópia e recarregar os dados.
 - 18 matérias dos anexos, após a correção do usuário sobre prefixos. Matérias podem ser adicionadas, renomeadas e ocultadas; ocultar preserva suas notas.
 - Entrada direta de média ou detalhada por avaliações para ambos os semestres. Alternar os modos preserva os valores e usa somente o modo selecionado.
