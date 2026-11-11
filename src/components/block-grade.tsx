@@ -22,6 +22,7 @@ export function RemainingTarget({ subject, goal = 7 }: { subject: Subject; goal?
   return <span className={`dynamic-target ${remaining.grade !== null && remaining.grade > 10 ? 'unreachable-target' : ''}`} title={remaining.message}>
     <strong>{remaining.grade !== null ? fmt(remaining.grade) : done ? '✓' : '—'}</strong>
     <small>{done ? 'Meta atingida' : belowGoal ? 'Meta não atingida' : remainingLabel(remaining.scope)}</small>
+    {remaining.grade !== null && remaining.grade > 10 && <small>Acima de 10 · meta inviável</small>}
     {!remaining.exact && remaining.grade !== null && <small className="estimate-label">Estimativa</small>}
   </span>;
 }

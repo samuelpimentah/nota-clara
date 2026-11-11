@@ -30,7 +30,7 @@ export function semesterBounds(s: Semester): Bounds {
   const active = (['N1','N2'] as const).filter(g => s.weights[g] > 0);
   const groups = { N1: groupBounds(s, 'N1'), N2: groupBounds(s, 'N2') };
   const exact = active.every(g => groups[g].exact);
-  const combine = (bound: 'min' | 'max') => active.reduce((sum, g) => sum.plus(groups[g][bound].mul(s.weights[g])), d(0)).div(s.weights.N1 + s.weights.N2);
+  const combine = (bound: 'min' | 'max') => active.reduce((sum, g) => sum.plus(groups[g][bound].mul(s.weights[g])), d(0)).div(d(s.weights.N1).plus(s.weights.N2));
   return {
     min: combine('min'), max: combine('max'),
     final: exact && active.every(g => groups[g].final !== null) ? combine('min') : null,
@@ -68,7 +68,7 @@ export function analyze(subject: Subject) {
     adjusted: first.final !== null && second.final !== null ? adjustedFirst(first.final, second.final) : null,
   };
 }
-export type Remaining = { grade: number | null; exact: boolean; message: string; scope: 'semester' | 'N1' | 'N2' | 'remaining' | 'done' | 'planning' | 'unknown' };
+export type Remaining = { grade: number | null; exact: boolean; message: string; scope: 'semester' | 'N1' | 'N2' | 'remaining-N1' | 'remaining-N2' | 'remaining' | 'done' | 'planning' | 'unknown' };
 export function remainingRequired(subject: Subject, goal = 7): Remaining {
   const a = analyze(subject), s = subject.s2;
   if (a.target === null) return { grade: null, exact: false, scope: 'unknown', message: 'Conclua ou informe a média de S1 para calcular a meta.' };
@@ -80,7 +80,7 @@ export function remainingRequired(subject: Subject, goal = 7): Remaining {
   const pendingGroups: ('N1' | 'N2')[] = [];
   for (const group of ['N1','N2'] as const) {
     if (s.weights[group] === 0) continue;
-    const share = d(s.weights[group]).div(s.weights.N1 + s.weights.N2);
+    const share = d(s.weights[group]).div(d(s.weights.N1).plus(s.weights.N2));
     const config = blockConfig(s, group);
     if (config.mode === 'direct') {
       if (config.grade === null) { pending = pending.plus(share); pendingGroups.push(group); }
@@ -101,13 +101,15 @@ export function remainingRequired(subject: Subject, goal = 7): Remaining {
   }
   if (pending.isZero()) return { grade: null, exact, scope: exact ? 'done' : 'planning', message: exact ? 'Todas as notas com peso foram preenchidas.' : `S1 de ${fmt(a.first.final)} já foi considerado. Todas as avaliações cadastradas em S2 têm nota, mas o cadastro completo ainda não foi confirmado. No + de S2, confirme que cadastrou todas as avaliações ou inclua as que faltam com nota vazia.` };
   const grade = Exact.max(0, target.minus(fixed).div(pending));
-  const scope = !anyFilled ? 'semester' : pendingGroups.length === 1 ? pendingGroups[0] : 'remaining';
+  const onlyGroup = pendingGroups.length === 1 ? pendingGroups[0] : null;
+  const partialGroup = onlyGroup && blockConfig(s, onlyGroup).mode === 'detailed' && s.assessments.some(item => item.group === onlyGroup && item.grade !== null);
+  const scope: Remaining['scope'] = !anyFilled ? 'semester' : onlyGroup ? partialGroup ? `remaining-${onlyGroup}` : onlyGroup : 'remaining';
   return { grade: ceilGrade(grade), exact, scope, message: exact
-    ? scope === 'N1' || scope === 'N2' ? `Nota necessária em ${scope} do segundo semestre, considerando as notas já lançadas e os pesos configurados.` : 'Média ponderada necessária nas notas restantes, conforme os pesos configurados.'
+    ? scope === 'N1' || scope === 'N2' ? `Nota necessária em ${scope} do segundo semestre, considerando as notas já lançadas e os pesos configurados.` : 'Média ponderada necessária nas avaliações pendentes (não na média inteira do bloco), conforme os pesos configurados.'
     : 'Estimativa com as avaliações cadastradas. Complete o planejamento para confirmar a meta restante.' };
 }
 export function remainingLabel(scope: Remaining['scope']): string {
-  return scope === 'N1' || scope === 'N2' ? `${scope} de S2` : scope === 'semester' ? 'média de S2' : scope === 'remaining' ? 'nas restantes de S2' : scope === 'done' ? 'Sem pendências' : scope === 'planning' ? 'Confirme avaliações de S2' : 'Informe S1';
+  return scope === 'N1' || scope === 'N2' ? `${scope} de S2` : scope === 'remaining-N1' || scope === 'remaining-N2' ? `pendências de ${scope.slice(-2)} de S2` : scope === 'semester' ? 'média de S2' : scope === 'remaining' ? 'nas restantes de S2' : scope === 'done' ? 'Sem pendências' : scope === 'planning' ? 'Confirme avaliações de S2' : 'Informe S1';
 }
 export function parseGrade(text: string): number | null {
   if (!text.trim()) return null;

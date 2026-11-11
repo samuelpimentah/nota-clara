@@ -1,13 +1,16 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDownToLine, ArrowRight, BookOpen, Calculator, Check, CheckCheck, ChevronRight, CircleHelp, FileUp, Cloud, CloudCheck, GraduationCap, LayoutDashboard, LoaderCircle, LogOut, Moon, Plus, Search, Settings2, ShieldCheck, Sparkles, Sun, Target, TrendingUp, X } from 'lucide-react';
+import { AlertTriangle, ArrowDownToLine, ArrowRight, BookOpen, Calculator, Check, CheckCheck, ChevronRight, CircleHelp, FileUp, Cloud, CloudCheck, GraduationCap, LayoutDashboard, LoaderCircle, LogOut, Moon, Plus, Search, Settings2, ShieldCheck, Sparkles, Sun, Target, TrendingUp, X } from 'lucide-react';
 import { analyze, ceilGrade, fmt, groupMean, overallAverage, type Status } from '@/lib/calculations';
-import { newSubject, setBlockGrade, setSemesterGrade, workspaceSchema, type Subject, type Workspace } from '@/lib/model';
+import { emptyWorkspace, newSubject, setBlockGrade, setSemesterGrade, workspaceSchema, type Subject, type Workspace } from '@/lib/model';
 import { api, Auth, Brand } from './auth';
 import type { ParsedReport } from '@/lib/report-import';
 import { ReportImport } from './report-import';
 import { Onboarding } from './onboarding';
 import { GradeInput, Modal, StatusBadge, statusLabels } from './ui';
+import { readGuestDraft, writeGuestDraft, clearGuestDraft } from '@/lib/guest-cache';
+import { EntryNotice, RulesOverview, WeightGuide, ReleaseHighlights as ReleaseGuest } from './calculation-guidance';
+import { HardDrive } from 'lucide-react';
 import { SubjectPanel } from './subject-panel';
 import { SemesterOverview, type SemesterKey } from './semester-overview';
 import { AnnualGrade, BlockGrade, RemainingTarget, SemesterGrade } from './block-grade';
@@ -19,10 +22,13 @@ export function Dashboard() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [error, setError] = useState(''), [saveState, setSaveState] = useState<SaveState>('saved');
   const [search, setSearch] = useState(''), [filter, setFilter] = useState<Status|'all'>('all');
-  const [panelId, setPanelId] = useState<string | null>(null), [modal, setModal] = useState<'help'|'manage'|'add'|'reload'|'export'|'onboarding'|null>(null);
+  const [panelId, setPanelId] = useState<string | null>(null), [modal, setModal] = useState<'help'|'manage'|'add'|'reload'|'export'|'onboarding'|'entry'|'guide'|'clear-guest'|null>(null);
   const [panelSemester, setPanelSemester] = useState<SemesterKey>('s2');
   const [panelGroup, setPanelGroup] = useState<'N1' | 'N2'>('N1');
   const [loadFailed, setLoadFailed] = useState(false);
+  const [guest, setGuest] = useState(false);
+  const guestMode = useRef(false), loadGeneration = useRef(0);
+  const accountProvider = useRef(process.env.NEXT_PUBLIC_STATIC_HOST === 'true' ? 'supabase' : 'local');
   const [exporting, setExporting] = useState(false), [exportError, setExportError] = useState('');
   const pending = useRef<Workspace | null>(null), lastSaved = useRef<Workspace | null>(null), revision = useRef(0);
   const inflight = useRef<Promise<void> | null>(null), blocked = useRef(false);
@@ -33,29 +39,43 @@ export function Dashboard() {
   const [subjectError, setSubjectError] = useState('');
   useEffect(() => { if (modal === 'add') setSubjectError(''); }, [modal]);
   const load = useCallback(async () => {
+    const generation = ++loadGeneration.current;
+    // Nunca deixe um rascunho editável enquanto a conta está sendo carregada.
+    guestMode.current = false; setGuest(false); setSession(null); setWorkspace(null);
+    pending.current = lastSaved.current = null;
     setError(''); setLoadFailed(false);
     try {
-      const auth = await api<{ user: User | null; provider: string }>('/api/auth'); setSession(auth);
+      const auth = await api<{ user: User | null; provider: string }>('/api/auth');
+      if (generation !== loadGeneration.current) return;
+      guestMode.current = false; setGuest(false); accountProvider.current = auth.provider; setSession(auth);
       if (auth.user) {
         const result = await api<{ data: Workspace; revision: number }>('/api/workspace');
+        if (generation !== loadGeneration.current) return;
         const data = workspaceSchema.parse(result.data); revision.current = result.revision;
         pending.current = lastSaved.current = data; blocked.current = false; setWorkspace(data); setSaveState('saved');
-        if (!data.onboardingSeen) setModal(current => current ?? 'onboarding');
+        setModal('entry');
       }
-    } catch (err) { setError((err as Error).message); setLoadFailed(true); }
+    } catch (err) { if (generation !== loadGeneration.current) return; setError((err as Error).message); setLoadFailed(true); }
   }, []);
   useEffect(() => { void load(); }, [load]);
   const save = useCallback(async function persist(): Promise<void> {
     if (inflight.current) { await inflight.current; if (pending.current !== lastSaved.current) return persist(); return; }
     const snapshot = pending.current;
     if (!snapshot || snapshot === lastSaved.current) return;
+    if (guestMode.current) {
+      try { writeGuestDraft(window.localStorage, snapshot); lastSaved.current = snapshot; blocked.current = false; setError(''); setSaveState('saved'); }
+      catch { blocked.current = true; setSaveState('error'); setError('O navegador não conseguiu guardar o rascunho. Ele está apenas nesta aba; exporte uma cópia antes de sair.'); throw new Error('Falha no cache temporário.'); }
+      return;
+    }
     setSaveState('saving');
+    const generation = loadGeneration.current;
     const operation = (async () => {
       try {
         const result = await api<{ revision: number }>('/api/workspace', { method: 'PUT', body: JSON.stringify({ data: snapshot, revision: revision.current }) });
+        if (generation !== loadGeneration.current || guestMode.current) return;
         revision.current = result.revision; lastSaved.current = snapshot; setError('');
         setSaveState(pending.current === snapshot ? 'saved' : 'pending');
-      } catch (err) { blocked.current = true; setSaveState('error'); setError((err as Error).message); throw err; }
+      } catch (err) { if (generation !== loadGeneration.current || guestMode.current) return; blocked.current = true; setSaveState('error'); setError((err as Error).message); throw err; }
     })();
     inflight.current = operation;
     try { await operation; } finally { inflight.current = null; }
@@ -73,13 +93,27 @@ export function Dashboard() {
   useEffect(() => { document.documentElement.dataset.theme = workspace?.theme || 'light'; }, [workspace?.theme]);
   function mutate(change: (w: Workspace) => Workspace) {
     if (!pending.current) return;
-    const next = change(pending.current); pending.current = next; setWorkspace(next); setSaveState(blocked.current ? 'error' : 'pending');
+    const next = change(pending.current); pending.current = next; setWorkspace(next);
+    if (guestMode.current) {
+      try { writeGuestDraft(window.localStorage, next); lastSaved.current = next; blocked.current = false; setSaveState('saved'); setError(''); }
+      catch { blocked.current = true; setSaveState('error'); setError('Cache indisponível: suas alterações estão somente nesta aba. Exporte uma cópia antes de sair.'); }
+    } else setSaveState(blocked.current ? 'error' : 'pending');
   }
   function updateSubject(subject: Subject) { mutate(w => ({ ...w, subjects: w.subjects.map(s => s.id === subject.id ? subject : s) })); }
   function openSubject(id: string, semester: SemesterKey = 's2', group: 'N1' | 'N2' = 'N1') { setPanelSemester(semester); setPanelGroup(group); setPanelId(id); }
   function updateBlock(subject: Subject, semester: SemesterKey, group: 'N1' | 'N2', grade: number | null) { updateSubject({ ...subject, [semester]: setBlockGrade(subject[semester], group, grade) }); }
+  function startGuest(fresh = false) {
+    ++loadGeneration.current; guestMode.current = true; setGuest(true); setLoadFailed(false); blocked.current = false;
+    let data = emptyWorkspace(); let warning = '';
+    try { if (fresh) clearGuestDraft(window.localStorage); const cached = fresh ? null : readGuestDraft(window.localStorage); data = cached ?? data; if (!cached) writeGuestDraft(window.localStorage, data); }
+    catch { warning = 'Cache indisponível: este rascunho existe apenas nesta aba. Exporte suas notas antes de sair.'; blocked.current = true; }
+    pending.current = lastSaved.current = data; setWorkspace(data); setSaveState(warning ? 'error' : 'saved'); setError(warning);
+    setSession({user:{id:'guest',name:'Visitante',username:'visitante'},provider:'guest'}); setModal('entry');
+  }
   async function logout() {
-    try { await save(); await api('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'logout' }) }); pending.current = lastSaved.current = null; setWorkspace(null); setSession(s => s ? { ...s, user: null } : null); setError(''); }
+    try {
+      if (guestMode.current) { await save(); ++loadGeneration.current; guestMode.current = false; setGuest(false); pending.current = lastSaved.current = null; setWorkspace(null); setSession({user:null,provider:accountProvider.current}); setError(''); setModal(null); return; }
+      await save(); await api('/api/auth', { method: 'POST', body: JSON.stringify({ action: 'logout' }) }); pending.current = lastSaved.current = null; setWorkspace(null); setSession(s => s ? { ...s, user: null } : null); setError(''); }
     catch (err) { setError((err as Error).message); }
   }
   function exportData() {
@@ -110,9 +144,9 @@ export function Dashboard() {
     if (pending.current && !pending.current.onboardingSeen) mutate(current=>({...current,onboardingSeen:true}));
     setModal(null);
   }
-  if (loadFailed) return <main className="boot"><CircleHelp size={34} /><h1>Não conseguimos carregar sua planilha.</h1><p role="alert">{error}</p><button className="button primary" onClick={() => void load()}>Tentar novamente</button></main>;
-  if (!session) return <main className="boot"><Brand /><LoaderCircle className="spin" size={28} /><p>Preparando seu espaço…</p></main>;
-  if (!session.user) return <Auth provider={session.provider} onLogin={() => void load()} />;
+  if (loadFailed) return <main className="boot"><CircleHelp size={34} /><h1>Não conseguimos carregar sua planilha.</h1><p role="alert">{error}</p><button className="button primary" onClick={() => void load()}>Tentar novamente</button><ReleaseGuest onGuest={()=>startGuest()}/></main>;
+  if (!session) return <main className="boot"><Brand /><LoaderCircle className="spin" size={28} /><p>Preparando seu espaço…</p><ReleaseGuest onGuest={()=>startGuest()}/></main>;
+  if (!session.user) return <Auth provider={session.provider} onLogin={() => void load()} onGuest={()=>startGuest()} />;
   if (!workspace) return <main className="boot"><LoaderCircle className="spin" /><p>Carregando suas notas…</p></main>;
   const goal = workspace.personalGoal ?? 7;
   const visible = workspace.subjects.filter(s => !s.hidden);
@@ -122,17 +156,19 @@ export function Dashboard() {
   const rows = analyses.filter(({ s, a }) => s.name.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(search.toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '')) && (filter === 'all' || a.status === filter));
   const filled = analyses.reduce((total, { a }) => total + a.first.filled + a.second.filled, 0);
   const panel = workspace.subjects.find(s => s.id === panelId);
-  const saveLabel = saveState === 'saved' ? 'Tudo salvo' : saveState === 'saving' ? 'Salvando…' : saveState === 'pending' ? 'Alterações pendentes' : 'Falha ao salvar';
-  const SaveIcon = saveState === 'saving' ? LoaderCircle : saveState === 'saved' ? CloudCheck : Cloud;
+  const saveLabel = saveState === 'saved' ? guest ? 'Rascunho neste navegador · 24h' : 'Tudo salvo' : saveState === 'saving' ? 'Salvando…' : saveState === 'pending' ? 'Alterações pendentes' : 'Falha ao salvar';
+  const SaveIcon = guest ? HardDrive : saveState === 'saving' ? LoaderCircle : saveState === 'saved' ? CloudCheck : Cloud;
   return <div className="app-shell">
     <aside className="sidebar"><Brand /><div className="workspace-label">MEU ANO LETIVO</div><nav><button className="nav-item active" onClick={() => { setFilter('all'); setSearch(''); }}><LayoutDashboard size={18} /> Visão geral <span className="nav-active-dot" /></button><button className="nav-item" onClick={() => setModal('manage')}><BookOpen size={18} /> Minhas matérias <span className="nav-count">{visible.length}</span></button><button className="nav-item" onClick={() => setModal('help')}><Calculator size={18} /> Entenda os cálculos</button></nav>
       <div className="sidebar-note"><span className="sidebar-note-icon"><Target size={25} /></span><h3>Sua meta é {fmt(goal)}.</h3><button onClick={() => setModal('help')}>Como funciona <ArrowRight size={14} /></button><span className="sidebar-orbit" /></div>
-      <div className="sidebar-bottom"><div className="private-note"><ShieldCheck size={16} /><span>Um espaço só seu.<small>Suas notas são privadas.</small></span></div><button className="nav-item" onClick={() => setModal('help')}><CircleHelp size={18} /> Ajuda e regras da escola</button><div className="sidebar-foot">nota clara <span>ESTUDE COM DIREÇÃO</span></div></div></aside>
-    <div className="app-main"><header className="topbar"><span className="mobile-logo"><Brand /></span><div className="breadcrumb">Área do estudante <ChevronRight size={14} /><span>Visão geral</span></div><div className="topbar-actions"><span className={`save-status ${saveState}`} aria-live="polite"><SaveIcon size={16} className={saveState === 'saving' ? 'spin' : ''} /><span>{saveLabel}</span></span><button className="icon-button theme-toggle" aria-label={workspace.theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'} onClick={() => mutate(w => ({ ...w, theme: w.theme === 'light' ? 'dark' : 'light' }))}>{workspace.theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}</button><span className="topbar-divider" /><div className="user-info"><span className="avatar">{session.user.name.slice(0, 2).toUpperCase()}</span><span>{session.user.name}<small>Estudante</small></span></div><button className="icon-button" aria-label="Sair da conta" onClick={() => void logout()}><LogOut size={17} /></button></div></header>
+      <div className="sidebar-bottom"><div className="private-note"><ShieldCheck size={16} /><span>{guest ? 'Rascunho provisório' : 'Um espaço só seu.'}<small>{guest ? 'Sem backup ou sincronização.' : 'Suas notas são privadas.'}</small></span></div><button className="nav-item" onClick={() => setModal('help')}><CircleHelp size={18} /> Ajuda e regras da escola</button><div className="sidebar-foot">nota clara <span>ESTUDE COM DIREÇÃO</span></div></div></aside>
+    <div className="app-main"><header className="topbar"><span className="mobile-logo"><Brand /></span><div className="breadcrumb">Área do estudante <ChevronRight size={14} /><span>Visão geral</span></div><div className="topbar-actions"><span className={`save-status ${saveState}`} aria-live="polite"><SaveIcon size={16} className={saveState === 'saving' ? 'spin' : ''} /><span>{saveLabel}</span></span><button className="icon-button theme-toggle" aria-label={workspace.theme === 'light' ? 'Ativar modo escuro' : 'Ativar modo claro'} onClick={() => mutate(w => ({ ...w, theme: w.theme === 'light' ? 'dark' : 'light' }))}>{workspace.theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}</button><span className="topbar-divider" /><div className="user-info"><span className="avatar">{session.user.name.slice(0, 2).toUpperCase()}</span><span>{session.user.name}<small>{guest ? 'Sem login' : 'Estudante'}</small></span></div><button className="icon-button" aria-label={guest ? 'Sair do rascunho e entrar na conta' : 'Sair da conta'} onClick={() => void logout()}><LogOut size={17} /></button></div></header>
       <main className="dashboard-content"><div className="page-heading"><div><span className="eyebrow">SEU ANO, SOB CONTROLE</span><h1>Suas notas, com clareza<span>.</span></h1><p>Saiba onde você está. Descubra o que falta para chegar lá.</p></div><label className="year-pill"><GraduationCap size={18} /><span>Ano letivo</span><input aria-label="Ano letivo" type="number" min={2000} max={2100} value={workspace.year} onChange={e => { const year = Number(e.target.value); if (year >= 2000 && year <= 2100) mutate(w => ({ ...w, year })); }} /></label></div>
       {error && <div className="notice error save-error" role="alert"><span>{error} Seus lançamentos continuam nesta aba.</span><button className="text-button" onClick={() => { blocked.current = false; void save().catch(() => {}); }}>Tentar salvar</button><button className="text-button" onClick={exportData}>Baixar cópia</button><button className="text-button" onClick={() => setModal('reload')}>Recarregar</button></div>}
-      {session.provider === 'local' && <div className="local-banner"><span className="live-dot" /><span><strong>Versão local</strong> · Seus dados ficam no servidor deste computador.</span><span className="local-banner-end">Sincronização entre dispositivos: configuração pendente <CircleHelp size={14} /></span></div>}
-      <section className="welcome-banner"><div><span className="banner-label"><Sparkles size={14} /> PLANEJAR TAMBÉM É APRENDER</span><h2>Um semestre de cada vez.</h2><p>Registre suas notas e transforme o “quanto falta?”<br className="desktop-break" /> em um próximo passo possível.</p><button onClick={() => setModal('help')}>Entenda como calculamos suas metas <ArrowRight size={16} /></button></div><div className="formula-art" aria-label="Primeiro semestre peso um, segundo semestre peso dois, meta anual sete"><span className="formula-art-orbit" /><span className="formula-card formula-first"><small>1º SEMESTRE</small><strong>1<span>×</span></strong><span>seu começo</span></span><span className="formula-plus">+</span><span className="formula-card formula-second"><small>2º SEMESTRE</small><strong>2<span>×</span></strong><span>sua próxima chance</span></span><span className="formula-goal"><Target size={15} /> meta anual <strong>7,0</strong></span></div></section>
+
+      {guest && <section className="guest-banner" role="status"><HardDrive size={22}/><div><strong>Modo sem login: rascunho temporário</strong><p>Fica somente neste navegador, recuperável por até 24h após a última edição. Não está salvo na conta e não sincroniza. Limpar o navegador pode apagar tudo; outras pessoas neste navegador podem ver as notas. Entrar não transfere nem substitui notas da conta.</p></div><button className="button secondary" onClick={()=>void logout()}>Entrar na conta</button><button className="text-button" onClick={()=>setModal('clear-guest')}>Limpar rascunho</button></section>}
+      <div className="data-responsibility"><AlertTriangle size={21}/><p><strong>Notas e pesos são informados por você.</strong> Confira os critérios do professor. A estimativa não substitui o boletim oficial.</p><button className="text-button" onClick={()=>setModal('guide')}>Ver guia com prints</button></div>
+      <RulesOverview onGuide={()=>setModal('guide')}/>
       <section className="stats-grid" aria-label="Resumo das matérias"><Stat label="Média geral" value={fmt(general.average)} detail={general.count===0?'Preencha a média de um semestre':`${general.partial?'Parcial · médias disponíveis':'Médias anuais'} · ${general.count}/${general.total} matérias`} description="Média simples das matérias visíveis. Usa a média anual quando concluída; caso contrário, usa S1 concluído ou, se ausente, S2 concluído. Notas vazias e blocos parciais não contam. Não determina aprovação individual." icon={<Calculator size={19}/>} tone="green" /><Stat label="Matérias em curso" value={visible.length} detail="Seu percurso neste ano" icon={<BookOpen size={19} />} tone="neutral" /><Stat label="Aprovação garantida" value={counts('guaranteed')} detail="Mesmo com zero nas pendências" icon={<CheckCheck size={19} />} tone="green" /><Stat label="Precisam de atenção" value={counts('possible') + counts('impossible')} detail={counts('impossible') ? `${counts('impossible')} fora do alcance direto` : 'Metas para acompanhar de perto'} icon={<Target size={19} />} tone="amber" /><Stat label="Notas registradas" value={filled} detail="Cada lançamento traz mais clareza" icon={<TrendingUp size={19} />} tone="blue" /></section>
       <section className="spreadsheet"><div className="table-heading"><div><h2>Minha planilha <span className="count">{visible.length} matérias</span></h2><p>Suas médias e o próximo passo em cada disciplina.</p></div><div className="table-actions"><input ref={importInput} type="file" accept="application/pdf,.pdf" aria-label="Selecionar boletim PDF" hidden onChange={event=>{const file=event.target.files?.[0];if(file)void importPdf(file);}}/><button className="button secondary import-button" disabled={importing} onClick={() => importInput.current?.click()}><FileUp size={16}/>{importing?'Lendo PDF…':'Importar PDF'}</button><button className="button secondary manage-button" onClick={() => setModal('manage')}><Settings2 size={16} /> Gerenciar</button><button className="button primary" onClick={() => setModal('add')}><Plus size={17} /> Nova matéria</button></div></div>
         <div className="table-toolbar"><div className="table-tabs"><button className={filter === 'all' ? 'active' : ''} onClick={() => setFilter('all')}>Todas <span>{visible.length}</span></button><button className={filter === 'possible' ? 'active' : ''} onClick={() => setFilter('possible')}>Atenção <span>{counts('possible')}</span></button><button className={filter === 'guaranteed' ? 'active' : ''} onClick={() => setFilter('guaranteed')}>Garantidas <span>{counts('guaranteed')}</span></button><button className={filter === 'impossible' ? 'active' : ''} onClick={() => setFilter('impossible')}>Fora do alcance <span>{counts('impossible')}</span></button></div><label className="search-field"><Search size={16} /><input aria-label="Buscar matéria" placeholder="Buscar matéria…" value={search} onChange={e => setSearch(e.target.value)} />{search && <button aria-label="Limpar busca" onClick={() => setSearch('')}><X size={13} /></button>}</label></div>
@@ -163,10 +199,13 @@ export function Dashboard() {
       <div className="bottom-note"><ShieldCheck size={15} /><p>Aprovação garantida considera o pior resultado possível nas pendências. <button onClick={() => setModal('help')}>Conheça as regras de cálculo.</button></p></div><footer className="page-footer"><span>Seu futuro começa nas pequenas conquistas.</span><span>Feito para o seu próximo passo <span className="tiny-brand">nc.</span></span></footer>
     </main></div>
     {panel && <SubjectPanel key={panel.id} subject={panel} goal={goal} initialSemester={panelSemester} initialGroup={panelGroup} onChange={updateSubject} onClose={() => setPanelId(null)} saveLabel={saveLabel} saveError={saveState === 'error' ? error : ''} onRetry={() => { blocked.current = false; void save().catch(() => {}); }} />}
-    {modal === 'onboarding' && <Onboarding onClose={closeOnboarding}/>}
+    {modal === 'entry' && <EntryNotice guest={guest} onClose={()=>setModal(null)} onGuide={()=>setModal('guide')}/>}
+    {modal === 'guide' && <WeightGuide onClose={()=>setModal(null)}/>}
+    {modal === 'clear-guest' && <Modal title="Limpar rascunho deste navegador?" onClose={()=>setModal(null)}><div className="help-content"><p>Isso apaga somente o rascunho sem login deste navegador. Nenhum dado da sua conta é alterado. Baixe uma cópia antes de continuar, se precisar.</p><button className="button secondary" onClick={exportData}>Baixar cópia</button><button className="button primary" onClick={()=>startGuest(true)}>Limpar rascunho e começar vazio</button></div></Modal>}
+    {modal === 'onboarding' && <Onboarding guest={guest} onClose={closeOnboarding}/>}
     {importReport && <ReportImport workspace={workspace} report={importReport} onClose={()=>setImportReport(null)} onApply={change=>{mutate(change);setImportReport(null);}}/>}
     {modal === 'export' && <Modal title="Exportar boletim em PDF" onClose={() => setModal(null)}><div className="help-content"><p>O documento terá a tabela de disciplinas e médias, sem faltas nem frequência, com o título <strong>Estimativa de situação atual do boletim</strong>.</p><p>Somente matérias visíveis entram no relatório. A situação usa a regra de aprovação em 7,0; a coluna de meta acompanha sua meta pessoal de {fmt(goal)}. Notas pendentes ficam como traço.</p><div className="notice">Este PDF não é um boletim oficial da escola e não inclui recuperação final.</div><div className="export-options"><button className="button primary" disabled={exporting} onClick={() => void downloadGrades()}><ArrowDownToLine size={18} />{exporting?'Preparando PDF…':'Baixar PDF'}</button></div>{exportError && <p role="alert" className="notice error">{exportError}</p>}</div></Modal>}
-    {modal === 'help' && <Modal title="Entenda suas notas" onClose={() => setModal(null)}><div className="help-content"><span className="small-icon"><Calculator size={24} /></span><h3>Uma meta clara, sem adivinhação.</h3><button className="button secondary" onClick={()=>setModal('onboarding')}>Rever introdução do site</button><p>As regras abaixo foram transcritas do documento da escola.</p><div className="formula-box">Média anual = (S1 ajustado + 2 × S2) ÷ 3<strong>Aprovação direta: média ≥ 7,0</strong></div><h4>A chance de recuperar S1</h4><p>Quando S1 está abaixo de 7 e S2 supera S1, usamos <strong>(S1 + S2) ÷ 2</strong> para ajustar S1, com limite de 7,0. S2 é a média do segundo semestre.</p><p>Por exemplo: com S1 = 6,0 e S2 = 7,2, o S1 ajustado é 6,6 e a média anual é exatamente 7,0.</p><h4>N1, N2 e avaliações pendentes</h4><p>Digite a média completa de N1 ou N2 diretamente na célula. O botão + permite detalhar provas, pesos e tipos. Só os blocos detalhados precisam de planejamento confirmado. Os pesos das avaliações valem dentro de seu próprio bloco; os pesos de N1/N2 compõem o semestre. Os pesos anuais são sempre 1 e 2. A coluna “Falta tirar” usa as notas já lançadas para projetar o que falta no segundo semestre. Sua meta pessoal pode variar de 7 a 10 em Gerenciar; os indicadores de aprovação continuam usando a regra escolar de 7,0. Digitar em FINAL ativa a média direta; apagar essa média volta a usar N1/N2, sem perder avaliações.</p><h4>O que significa cada situação?</h4>{(['guaranteed','possible','impossible','unknown'] as const).map(status => <div className="status-explanation" key={status}><StatusBadge status={status} /><p>{status === 'guaranteed' ? 'Mesmo com zero nas pendências, a média anual será pelo menos 7.' : status === 'possible' ? 'S1 está definido e a aprovação ainda é possível. Depende das notas restantes.' : status === 'impossible' ? 'Mesmo com 10 nas pendências, a média anual ficará abaixo de 7.' : 'Faltam dados ou o planejamento ainda não permite concluir.'}</p></div>)}<h4>Precisão e recuperação final</h4><p>O anexo não informa arredondamento oficial. Uma média abaixo de 7 não vira aprovação por arredondamento visual. As metas são arredondadas para cima em centésimos. O anexo também informa (recuperação final + média anual) ÷ 2 ≥ 6; essa etapa não entra na classificação de aprovação direta.</p><p className="hint">Ano letivo identifica esta planilha; alterar o ano não cria um histórico separado.</p></div></Modal>}
+    {modal === 'help' && <Modal title="Entenda suas notas" onClose={() => setModal(null)}><div className="help-content"><span className="small-icon"><Calculator size={24} /></span><h3>Uma meta clara, sem adivinhação.</h3><button className="button secondary" onClick={()=>setModal('onboarding')}>Rever introdução do site</button><button className="button secondary" onClick={()=>setModal('guide')}>Ver tutorial de pesos com prints</button><p>As regras abaixo foram transcritas do documento da escola. Notas e pesos são informados por você e devem seguir os critérios do professor.</p><div className="formula-box">Média anual = (S1 ajustado + 2 × S2) ÷ 3<strong>Aprovação direta: média ≥ 7,0</strong></div><h4>A chance de recuperar S1</h4><p>Quando S1 está abaixo de 7 e S2 supera S1, usamos <strong>(S1 + S2) ÷ 2</strong> para ajustar S1, com limite de 7,0. S2 é a média do segundo semestre.</p><p>Por exemplo: com S1 = 6,0 e S2 = 7,2, o S1 ajustado é 6,6 e a média anual é exatamente 7,0.</p><h4>N1, N2 e avaliações pendentes</h4><p>Digite a média completa de N1 ou N2 diretamente na célula. O botão + permite detalhar provas, pesos e tipos. Só os blocos detalhados precisam de planejamento confirmado. Os pesos das avaliações valem dentro de seu próprio bloco; os pesos de N1/N2 compõem o semestre. Os pesos anuais são sempre 1 e 2. A coluna “Falta tirar” usa as notas já lançadas para projetar o que falta no segundo semestre. Sua meta pessoal pode variar de 7 a 10 em Gerenciar; os indicadores de aprovação continuam usando a regra escolar de 7,0. Digitar em FINAL ativa a média direta; apagar essa média volta a usar N1/N2, sem perder avaliações.</p><h4>O que significa cada situação?</h4>{(['guaranteed','possible','impossible','unknown'] as const).map(status => <div className="status-explanation" key={status}><StatusBadge status={status} /><p>{status === 'guaranteed' ? 'Mesmo com zero nas pendências, a média anual será pelo menos 7.' : status === 'possible' ? 'S1 está definido e a aprovação ainda é possível. Depende das notas restantes.' : status === 'impossible' ? 'Mesmo com 10 nas pendências, a média anual ficará abaixo de 7.' : 'Faltam dados ou o planejamento ainda não permite concluir.'}</p></div>)}<h4>Precisão e recuperação final</h4><p>O anexo não informa arredondamento oficial. Uma média abaixo de 7 não vira aprovação por arredondamento visual. As metas são arredondadas para cima em centésimos. O anexo também informa (recuperação final + média anual) ÷ 2 ≥ 6; essa etapa não entra na classificação de aprovação direta.</p><p className="hint">Ano letivo identifica esta planilha; alterar o ano não cria um histórico separado.</p></div></Modal>}
     {modal === 'add' && <Modal title="Nova matéria" onClose={() => setModal(null)}>
       <form className="add-form" onSubmit={e => {
         e.preventDefault(); const name = String(new FormData(e.currentTarget).get('name')).trim();
@@ -180,7 +219,7 @@ export function Dashboard() {
       </form>
     </Modal>}
     {modal === 'manage' && <Modal title="Minhas matérias" onClose={() => { setModal(null); setManageSearch(''); }}><div className="manage-content"><section className="personal-goal-setting"><Target size={24}/><div><h3>Sua meta pessoal</h3><p>Escolha de 7,0 a 10,0. Ela muda o que falta tirar; a aprovação da escola continua em 7,0.</p></div><label>Meta anual<GradeInput label="Meta pessoal anual" value={goal} onChange={value=>{if(value!==null && value>=7 && value<=10){mutate(current=>({...current,personalGoal:value}));setGoalError('');}else setGoalError('A meta pessoal deve ficar entre 7,0 e 10,0.');}}/></label>{goalError&&<p className="notice error" role="alert">{goalError}</p>}</section><p>Oculte as matérias que você não cursa. Suas notas continuam guardadas e podem ser reativadas.</p><label className="search-field"><Search size={16} /><input aria-label="Filtrar matérias" placeholder="Buscar disciplina…" value={manageSearch} onChange={e => setManageSearch(e.target.value)} /></label><div className="manage-list">{workspace.subjects.filter(s => s.name.toLowerCase().includes(manageSearch.toLowerCase())).map(s => <label key={s.id}><span className="subject-symbol tone-1">{subjectLetters(s.name)}</span><span>{s.name}<small>{s.hidden ? 'Oculta na planilha' : 'Visível na planilha'}</small></span><input type="checkbox" aria-label={`Mostrar ${s.name}`} checked={!s.hidden} onChange={e => updateSubject({ ...s, hidden: !e.target.checked })} /></label>)}</div><button className="button secondary" onClick={() => setModal('add')}><Plus size={15} /> Adicionar matéria personalizada</button></div></Modal>}
-    {modal === 'reload' && <Modal title="Recarregar os dados salvos?" onClose={() => setModal(null)}><div className="help-content"><p>As alterações ainda não salvas nesta aba serão descartadas. Você pode baixar uma cópia antes de continuar.</p><div className="table-actions"><button className="button secondary" onClick={exportData}>Baixar cópia</button><button className="button primary" onClick={() => { setModal(null); void load(); }}>Recarregar dados</button></div></div></Modal>}
+    {modal === 'reload' && <Modal title="Recarregar os dados salvos?" onClose={() => setModal(null)}><div className="help-content"><p>As alterações ainda não salvas nesta aba serão descartadas. Você pode baixar uma cópia antes de continuar.</p><div className="table-actions"><button className="button secondary" onClick={exportData}>Baixar cópia</button><button className="button primary" onClick={() => { setModal(null); if(guest)startGuest();else void load(); }}>Recarregar dados</button></div></div></Modal>}
   </div>;
 }
 function Stat({ label, value, detail, icon, tone, description }: { label: string; value: number | string; detail: string; icon: React.ReactNode; tone: string; description?: string }) {
